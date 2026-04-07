@@ -1,0 +1,2431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RANASPACE — Space Intelligence Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+:root {
+  --bg: #000408;
+  --bg2: #020810;
+  --surface: #040c18;
+  --panel: #060f20;
+  --card: #081226;
+  --elevated: #0a1830;
+  --b0: rgba(0,212,255,.04);
+  --b1: rgba(0,212,255,.08);
+  --b2: rgba(0,212,255,.15);
+  --b3: rgba(0,212,255,.25);
+  --t1: #c8d8e8;
+  --t2: #7a98b8;
+  --t3: #3a5870;
+  --t4: #1e3048;
+  --cyan: #00d4ff;
+  --cyandim: rgba(0,212,255,.12);
+  --orange: #ff6b35;
+  --orangedim: rgba(255,107,53,.12);
+  --green: #00ff88;
+  --greendim: rgba(0,255,136,.1);
+  --red: #ff3355;
+  --reddim: rgba(255,51,85,.1);
+  --purple: #a855f7;
+  --gold: #ffd700;
+  --golddim: rgba(255,215,0,.1);
+  --amber: #f59e0b;
+  --glow-cyan: 0 0 20px rgba(0,212,255,.3), 0 0 40px rgba(0,212,255,.1);
+  --glow-orange: 0 0 20px rgba(255,107,53,.3);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;font-size:13px;background:var(--bg);}
+body{color:var(--t1);font-family:'Rajdhani',sans-serif;overflow:hidden;display:flex;flex-direction:column;}
+::-webkit-scrollbar{width:3px;height:3px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px;}
+
+/* ══════════════════════════════════════════════════════
+   LOADER
+══════════════════════════════════════════════════════ */
+#loader{
+  position:fixed;inset:0;background:var(--bg);z-index:9999;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  overflow:hidden;
+}
+#loader-canvas{position:absolute;inset:0;pointer-events:none;}
+.loader-content{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:0;}
+.ld-emblem{
+  width:120px;height:120px;position:relative;margin-bottom:32px;
+}
+.ld-ring{
+  position:absolute;border-radius:50%;border:1px solid var(--cyan);
+  animation:spin linear infinite;opacity:.4;
+}
+.ld-ring:nth-child(1){width:120px;height:120px;top:0;left:0;animation-duration:8s;border-color:rgba(0,212,255,.6);}
+.ld-ring:nth-child(2){width:85px;height:85px;top:17.5px;left:17.5px;animation-duration:5s;animation-direction:reverse;border-color:rgba(255,107,53,.5);}
+.ld-ring:nth-child(3){width:50px;height:50px;top:35px;left:35px;animation-duration:3s;border-color:rgba(0,255,136,.4);}
+.ld-core{
+  position:absolute;width:24px;height:24px;top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  background:radial-gradient(circle,var(--cyan) 0%,rgba(0,212,255,.3) 60%,transparent 100%);
+  border-radius:50%;animation:pulse 2s ease-in-out infinite;
+}
+.ld-sat{
+  position:absolute;width:8px;height:8px;background:var(--orange);border-radius:50%;
+  top:50%;left:50%;margin-top:-4px;margin-left:56px;
+  box-shadow:0 0 8px var(--orange);
+  transform-origin:-56px 0;
+  animation:spin 8s linear infinite;
+}
+.ld-sat2{
+  position:absolute;width:5px;height:5px;background:var(--cyan);border-radius:50%;
+  top:50%;left:50%;margin-top:-2.5px;margin-left:38px;
+  box-shadow:0 0 6px var(--cyan);
+  transform-origin:-38px 0;
+  animation:spin 5s linear infinite reverse;
+}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:1;transform:translate(-50%,-50%) scale(1)}50%{opacity:.5;transform:translate(-50%,-50%) scale(1.3)}}
+.ld-title{
+  font-family:'Orbitron',monospace;font-size:32px;font-weight:800;
+  letter-spacing:.25em;color:#fff;text-shadow:var(--glow-cyan);
+  margin-bottom:4px;
+}
+.ld-sub{
+  font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:.3em;
+  color:var(--cyan);margin-bottom:40px;text-transform:uppercase;
+}
+.ld-bar-wrap{width:300px;margin-bottom:12px;}
+.ld-bar-track{width:100%;height:1px;background:var(--b1);}
+.ld-bar-fill{height:1px;background:linear-gradient(90deg,transparent,var(--cyan),var(--orange));width:0;transition:width .2s ease;box-shadow:0 0 8px var(--cyan);}
+.ld-status{
+  font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:.15em;
+  color:var(--t3);min-height:14px;text-transform:uppercase;
+}
+.ld-tags{display:flex;gap:6px;margin-top:28px;flex-wrap:wrap;justify-content:center;max-width:400px;}
+.ld-tag{
+  font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:.08em;
+  color:var(--t4);padding:2px 8px;border:1px solid var(--b0);text-transform:uppercase;
+  transition:all .4s;
+}
+.ld-tag.ok{color:var(--cyan);border-color:rgba(0,212,255,.25);background:rgba(0,212,255,.04);}
+/* grid background for loader */
+#loader::before{
+  content:'';position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(0,212,255,.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,212,255,.03) 1px,transparent 1px);
+  background-size:60px 60px;
+  pointer-events:none;
+}
+
+/* ══════════════════════════════════════════════════════
+   HEADER
+══════════════════════════════════════════════════════ */
+#hdr{
+  display:flex;align-items:center;gap:12px;padding:0 16px;height:48px;
+  background:var(--surface);border-bottom:1px solid var(--b1);flex-shrink:0;
+  position:relative;z-index:100;
+}
+.hdr-logo{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.hdr-emblem{
+  width:28px;height:28px;position:relative;flex-shrink:0;
+}
+.hdr-ring{
+  position:absolute;border-radius:50%;border:1px solid var(--cyan);
+  animation:spin linear infinite;
+}
+.hdr-ring:nth-child(1){width:28px;height:28px;top:0;left:0;animation-duration:6s;opacity:.5;}
+.hdr-ring:nth-child(2){width:18px;height:18px;top:5px;left:5px;animation-duration:4s;animation-direction:reverse;opacity:.7;border-color:var(--orange);}
+.hdr-dot{position:absolute;width:8px;height:8px;background:var(--cyan);border-radius:50%;top:10px;left:10px;box-shadow:0 0 8px var(--cyan);}
+.hdr-brand{
+  font-family:'Orbitron',monospace;font-size:16px;font-weight:800;
+  letter-spacing:.2em;color:#fff;text-shadow:0 0 15px rgba(0,212,255,.4);
+}
+.hdr-brand span{color:var(--cyan);}
+.hdr-tagline{
+  font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:.15em;
+  color:var(--t3);text-transform:uppercase;
+}
+.hdr-sep{width:1px;height:20px;background:var(--b1);flex-shrink:0;}
+.live-badge{
+  display:flex;align-items:center;gap:5px;
+  font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:.12em;
+  color:var(--green);padding:3px 8px;border:1px solid rgba(0,255,136,.2);
+  background:rgba(0,255,136,.05);text-transform:uppercase;
+}
+.live-dot{width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:blink 1.5s ease-in-out infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.hdr-stats{display:flex;gap:16px;flex:1;justify-content:center;}
+.hdr-stat{display:flex;flex-direction:column;align-items:center;cursor:default;}
+.hdr-stat-label{font-family:'Share Tech Mono',monospace;font-size:7px;letter-spacing:.12em;color:var(--t3);text-transform:uppercase;}
+.hdr-stat-val{font-family:'Orbitron',monospace;font-size:11px;font-weight:600;letter-spacing:.05em;margin-top:1px;}
+.hdr-stat-val.c{color:var(--cyan);}
+.hdr-stat-val.o{color:var(--orange);}
+.hdr-stat-val.g{color:var(--green);}
+.hdr-stat-val.p{color:var(--purple);}
+.hdr-right{display:flex;align-items:center;gap:12px;flex-shrink:0;}
+#utc-clock{font-family:'Orbitron',monospace;font-size:12px;font-weight:500;color:var(--cyan);letter-spacing:.08em;}
+#utc-date{font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--t3);letter-spacing:.08em;}
+.threat-pill{
+  font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:.12em;
+  padding:3px 8px;border:1px solid rgba(255,107,53,.3);
+  color:var(--orange);background:rgba(255,107,53,.06);text-transform:uppercase;
+}
+
+/* ══════════════════════════════════════════════════════
+   TICKER
+══════════════════════════════════════════════════════ */
+#ticker{
+  height:22px;background:rgba(0,212,255,.04);border-bottom:1px solid var(--b0);
+  display:flex;align-items:center;overflow:hidden;flex-shrink:0;
+}
+.ticker-label{
+  font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:.15em;
+  color:var(--cyan);background:rgba(0,212,255,.1);padding:0 10px;
+  border-right:1px solid var(--b1);white-space:nowrap;height:100%;
+  display:flex;align-items:center;flex-shrink:0;text-transform:uppercase;
+}
+.ticker-scroll{flex:1;overflow:hidden;position:relative;}
+.ticker-inner{
+  display:flex;gap:40px;white-space:nowrap;
+  animation:ticker-move 60s linear infinite;
+  font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--t2);
+}
+@keyframes ticker-move{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.ticker-item{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;}
+.ticker-item .ti-dot{width:4px;height:4px;border-radius:50%;background:var(--cyan);opacity:.5;flex-shrink:0;}
+.ticker-item .ti-cat{color:var(--cyan);font-size:8px;letter-spacing:.08em;}
+
+/* ══════════════════════════════════════════════════════
+   NAV TABS
+══════════════════════════════════════════════════════ */
+#nav{
+  display:flex;align-items:center;background:var(--surface);
+  border-bottom:1px solid var(--b1);flex-shrink:0;
+  overflow-x:auto;padding:0 8px;gap:2px;
+}
+#nav::-webkit-scrollbar{height:2px;}
+.nav-tab{
+  font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:.12em;
+  padding:9px 14px;color:var(--t3);cursor:pointer;
+  border-bottom:2px solid transparent;transition:all .2s;
+  white-space:nowrap;display:flex;align-items:center;gap:6px;text-transform:uppercase;
+}
+.nav-tab:hover{color:var(--t2);background:var(--b0);}
+.nav-tab.active{color:var(--cyan);border-bottom-color:var(--cyan);}
+.nav-tab .nt-icon{font-size:11px;}
+.nav-tab .nt-count{
+  font-size:7px;background:rgba(0,212,255,.1);color:var(--cyan);
+  padding:1px 4px;border-radius:2px;
+}
+
+/* ══════════════════════════════════════════════════════
+   MAIN LAYOUT
+══════════════════════════════════════════════════════ */
+#main{display:flex;flex:1;min-height:0;overflow:hidden;}
+#sidebar-left{
+  width:260px;flex-shrink:0;background:var(--surface);
+  border-right:1px solid var(--b1);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+#content{flex:1;min-width:0;overflow:hidden;position:relative;}
+#sidebar-right{
+  width:240px;flex-shrink:0;background:var(--surface);
+  border-left:1px solid var(--b1);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+
+/* ══════════════════════════════════════════════════════
+   PANEL COMPONENTS
+══════════════════════════════════════════════════════ */
+.panel{display:flex;flex-direction:column;flex-shrink:0;}
+.panel.grow{flex:1;min-height:0;}
+.ph{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:6px 10px;border-bottom:1px solid var(--b0);flex-shrink:0;
+}
+.ph-title{
+  font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:.12em;
+  color:var(--t2);text-transform:uppercase;display:flex;align-items:center;gap:5px;
+}
+.ph-title .ph-icon{color:var(--cyan);}
+.ph-right{font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--t4);}
+.pb{overflow-y:auto;flex:1;padding:6px;}
+.div-line{height:1px;background:var(--b0);flex-shrink:0;}
+
+/* stat grid */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--b0);}
+.sg-cell{background:var(--panel);padding:8px 10px;}
+.sg-label{font-family:'Share Tech Mono',monospace;font-size:7px;letter-spacing:.1em;color:var(--t4);text-transform:uppercase;margin-bottom:3px;}
+.sg-value{font-family:'Orbitron',monospace;font-size:14px;font-weight:600;color:var(--t1);}
+.sg-value.c{color:var(--cyan);}
+.sg-value.o{color:var(--orange);}
+.sg-value.g{color:var(--green);}
+.sg-sub{font-family:'Share Tech Mono',monospace;font-size:7px;color:var(--t4);margin-top:2px;}
+
+/* list items */
+.list-item{
+  padding:6px 8px;border-bottom:1px solid var(--b0);cursor:pointer;
+  transition:background .15s;display:flex;align-items:center;gap:8px;
+}
+.list-item:hover{background:var(--b0);}
+.li-flag{font-size:14px;flex-shrink:0;}
+.li-info{flex:1;min-width:0;}
+.li-name{font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;color:var(--t1);truncate}
+.li-sub{font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--t3);letter-spacing:.05em;margin-top:1px;}
+.li-badge{
+  font-family:'Share Tech Mono',monospace;font-size:7px;
+  padding:2px 5px;border-radius:2px;flex-shrink:0;text-transform:uppercase;
+  letter-spacing:.05em;
+}
+.li-badge.active{background:rgba(0,255,136,.1);color:var(--green);border:1px solid rgba(0,255,136,.2);}
+.li-badge.dev{background:rgba(255,107,53,.1);color:var(--orange);border:1px solid rgba(255,107,53,.2);}
+.li-badge.hist{background:rgba(122,152,184,.1);color:var(--t3);border:1px solid var(--b1);}
+
+/* ══════════════════════════════════════════════════════
+   CONTENT VIEWS
+══════════════════════════════════════════════════════ */
+.view{display:none;width:100%;height:100%;overflow:hidden;}
+.view.active{display:flex;flex-direction:column;}
+
+/* GLOBE VIEW */
+#globe-view{position:relative;}
+#globe-canvas-3d{position:absolute;inset:0;width:100%;height:100%;}
+#globe-overlay{
+  position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(180deg,rgba(0,4,8,.8) 0%,transparent 30%,transparent 70%,rgba(0,4,8,.8) 100%);
+}
+.globe-info-panel{
+  position:absolute;top:16px;left:16px;
+  background:rgba(4,12,24,.9);border:1px solid var(--b1);
+  padding:12px 14px;min-width:200px;pointer-events:auto;
+}
+.globe-info-title{
+  font-family:'Orbitron',monospace;font-size:11px;font-weight:600;
+  color:var(--cyan);letter-spacing:.12em;margin-bottom:8px;
+  text-transform:uppercase;
+}
+.globe-metric{display:flex;justify-content:space-between;align-items:center;padding:3px 0;}
+.gm-label{font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;}
+.gm-val{font-family:'Orbitron',monospace;font-size:10px;font-weight:600;color:var(--t1);}
+.globe-legend{
+  position:absolute;bottom:16px;left:16px;
+  background:rgba(4,12,24,.9);border:1px solid var(--b1);
+  padding:10px 12px;pointer-events:auto;
+}
+.legend-item{display:flex;align-items:center;gap:6px;padding:2px 0;}
+.legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.legend-label{font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--t2);}
+.globe-controls{
+  position:absolute;top:16px;right:16px;
+  display:flex;flex-direction:column;gap:4px;pointer-events:auto;
+}
+.globe-btn{
+  font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:.1em;
+  padding:5px 10px;border:1px solid var(--b1);color:var(--t2);
+  background:rgba(4,12,24,.9);cursor:pointer;transition:all .2s;
+  text-transform:uppercase;
+}
+.globe-btn:hover,.globe-btn.active{border-color:var(--cyan);color:var(--cyan);background:rgba(0,212,255,.06);}
+
+/* 2D MAP VIEW */
+#map2d{width:100%;height:100%;}
+
+/* GRID VIEWS */
+.grid-view{
+  padding:12px;display:grid;gap:8px;overflow-y:auto;flex:1;
+  align-content:start;
+}
+.grid-view.cols-3{grid-template-columns:repeat(3,1fr);}
+.grid-view.cols-2{grid-template-columns:repeat(2,1fr);}
+.grid-view.cols-4{grid-template-columns:repeat(4,1fr);}
+
+/* CARDS */
+.space-card{
+  background:var(--panel);border:1px solid var(--b1);padding:14px;
+  cursor:pointer;transition:all .2s;position:relative;overflow:hidden;
+}
+.space-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--cyan),transparent);
+  opacity:0;transition:opacity .2s;
+}
+.space-card:hover{border-color:var(--b2);background:var(--elevated);}
+.space-card:hover::before{opacity:.6;}
+.sc-header{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;}
+.sc-icon{font-size:24px;flex-shrink:0;line-height:1;}
+.sc-title-wrap{flex:1;min-width:0;}
+.sc-title{font-family:'Orbitron',monospace;font-size:11px;font-weight:700;color:var(--t1);letter-spacing:.05em;}
+.sc-agency{font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--cyan);letter-spacing:.08em;margin-top:2px;text-transform:uppercase;}
+.sc-body{font-family:'Rajdhani',sans-serif;font-size:11px;color:var(--t3);line-height:1.5;margin-bottom:10px;}
+.sc-tags{display:flex;gap:4px;flex-wrap:wrap;}
+.sc-tag{
+  font-family:'Share Tech Mono',monospace;font-size:7px;letter-spacing:.08em;
+  padding:2px 6px;border:1px solid var(--b1);color:var(--t3);text-transform:uppercase;
+}
+.sc-tag.cyan{border-color:rgba(0,212,255,.2);color:var(--cyan);background:rgba(0,212,255,.04);}
+.sc-tag.orange{border-color:rgba(255,107,53,.2);color:var(--orange);background:rgba(255,107,53,.04);}
+.sc-tag.green{border-color:rgba(0,255,136,.2);color:var(--green);background:rgba(0,255,136,.04);}
+.sc-tag.red{border-color:rgba(255,51,85,.2);color:var(--red);background:rgba(255,51,85,.04);}
+.sc-tag.purple{border-color:rgba(168,85,247,.2);color:var(--purple);background:rgba(168,85,247,.04);}
+.sc-footer{display:flex;align-items:center;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid var(--b0);}
+.sc-meta{font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--t4);text-transform:uppercase;}
+
+/* NATION CARD */
+.nation-card{
+  background:var(--panel);border:1px solid var(--b1);padding:12px;
+  cursor:pointer;transition:all .2s;position:relative;
+}
+.nation-card:hover{border-color:var(--b2);background:var(--elevated);}
+.nc-top{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.nc-flag{font-size:28px;flex-shrink:0;}
+.nc-info{flex:1;}
+.nc-name{font-family:'Orbitron',monospace;font-size:10px;font-weight:700;color:var(--t1);letter-spacing:.05em;}
+.nc-agency{font-family:'Share Tech Mono',monospace;font-size:7px;color:var(--cyan);letter-spacing:.08em;margin-top:1px;text-transform:uppercase;}
+.nc-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-top:6px;}
+.nc-stat{background:var(--elevated);padding:4px 6px;text-align:center;}
+.nc-stat-val{font-family:'Orbitron',monospace;font-size:10px;font-weight:600;color:var(--cyan);}
+.nc-stat-label{font-family:'Share Tech Mono',monospace;font-size:6px;color:var(--t4);text-transform:uppercase;letter-spacing:.06em;margin-top:1px;}
+.nc-bar{height:2px;background:var(--b0);margin-top:8px;overflow:hidden;}
+.nc-bar-fill{height:100%;background:linear-gradient(90deg,var(--cyan),var(--orange));transition:width 1s ease;}
+
+/* ROCKET CARD */
+.rocket-card{
+  background:var(--panel);border:1px solid var(--b1);padding:14px;
+  cursor:pointer;transition:all .2s;
+}
+.rocket-card:hover{border-color:var(--b2);background:var(--elevated);}
+.rk-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;}
+.rk-name{font-family:'Orbitron',monospace;font-size:12px;font-weight:700;color:var(--t1);}
+.rk-country{font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--cyan);letter-spacing:.08em;margin-top:2px;}
+.rk-status-badge{
+  font-family:'Share Tech Mono',monospace;font-size:7px;letter-spacing:.1em;
+  padding:2px 6px;border-radius:1px;text-transform:uppercase;flex-shrink:0;
+}
+.rk-status-badge.active{background:rgba(0,255,136,.1);color:var(--green);border:1px solid rgba(0,255,136,.2);}
+.rk-status-badge.retired{background:rgba(122,152,184,.1);color:var(--t3);border:1px solid var(--b1);}
+.rk-status-badge.dev{background:rgba(255,107,53,.1);color:var(--orange);border:1px solid rgba(255,107,53,.2);}
+.rk-vis{
+  display:flex;align-items:flex-end;gap:3px;margin-bottom:10px;
+  height:60px;
+}
+.rk-bar{
+  background:linear-gradient(180deg,var(--cyan),rgba(0,212,255,.3));
+  border-radius:1px 1px 0 0;min-width:6px;flex:1;transition:height .8s ease;
+  position:relative;
+}
+.rk-bar::after{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:var(--cyan);box-shadow:0 0 6px var(--cyan);
+}
+.rk-specs{display:grid;grid-template-columns:1fr 1fr;gap:3px;}
+.rk-spec{display:flex;flex-direction:column;}
+.rk-spec-label{font-family:'Share Tech Mono',monospace;font-size:7px;color:var(--t4);text-transform:uppercase;letter-spacing:.08em;}
+.rk-spec-val{font-family:'Orbitron',monospace;font-size:10px;font-weight:500;color:var(--t2);margin-top:1px;}
+
+/* SATELLITE CARD */
+.sat-card{
+  background:var(--panel);border:1px solid var(--b1);padding:14px;
+  cursor:pointer;transition:all .2s;position:relative;
+}
+.sat-card:hover{border-color:var(--b2);background:var(--elevated);}
+.sat-orbit-vis{
+  width:50px;height:50px;position:relative;flex-shrink:0;
+}
+.sat-orbit-ring{
+  position:absolute;border-radius:50%;border:1px solid rgba(0,212,255,.3);
+}
+.sat-orbit-ring.r1{width:50px;height:50px;top:0;left:0;animation:spin 4s linear infinite;}
+.sat-orbit-ring.r2{width:34px;height:34px;top:8px;left:8px;animation:spin 2.5s linear infinite reverse;border-color:rgba(255,107,53,.3);}
+.sat-dot{position:absolute;width:6px;height:6px;background:var(--cyan);border-radius:50%;top:50%;right:-3px;margin-top:-3px;box-shadow:0 0 6px var(--cyan);}
+.sat-center{position:absolute;width:10px;height:10px;background:rgba(0,212,255,.2);border:1px solid rgba(0,212,255,.4);border-radius:50%;top:50%;left:50%;transform:translate(-50%,-50%);}
+
+/* NEWS */
+.news-item{
+  padding:10px;border-bottom:1px solid var(--b0);cursor:pointer;
+  transition:background .15s;
+}
+.news-item:hover{background:var(--b0);}
+.ni-header{display:flex;align-items:center;gap:6px;margin-bottom:6px;}
+.ni-source{font-family:'Share Tech Mono',monospace;font-size:7px;letter-spacing:.1em;color:var(--cyan);text-transform:uppercase;}
+.ni-date{font-family:'Share Tech Mono',monospace;font-size:7px;color:var(--t4);margin-left:auto;}
+.ni-title{font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;color:var(--t1);line-height:1.4;margin-bottom:4px;}
+.ni-summary{font-family:'Rajdhani',sans-serif;font-size:10px;color:var(--t3);line-height:1.4;}
+.ni-cat{
+  font-family:'Share Tech Mono',monospace;font-size:7px;letter-spacing:.08em;
+  padding:1px 5px;background:rgba(0,212,255,.06);color:var(--cyan);
+  border:1px solid rgba(0,212,255,.12);text-transform:uppercase;
+}
+
+/* LAUNCHES LIST */
+.launch-item{
+  padding:10px;border-bottom:1px solid var(--b0);
+  transition:background .15s;cursor:pointer;
+}
+.launch-item:hover{background:var(--b0);}
+.li-time{font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--orange);letter-spacing:.06em;}
+.li-mission{font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:600;color:var(--t1);margin:2px 0;}
+.li-rocket{font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--cyan);}
+.li-pad{font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--t3);}
+.li-countdown{
+  font-family:'Orbitron',monospace;font-size:11px;font-weight:600;
+  color:var(--orange);letter-spacing:.05em;
+}
+
+/* PERSONS CARD */
+.person-card{
+  background:var(--panel);border:1px solid var(--b1);padding:14px;
+  cursor:pointer;transition:all .2s;
+}
+.person-card:hover{border-color:var(--b2);background:var(--elevated);}
+.pc-avatar{
+  width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--cyan),var(--purple));
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Orbitron',monospace;font-size:16px;font-weight:700;color:#000;
+  flex-shrink:0;margin-bottom:8px;
+}
+.pc-name{font-family:'Orbitron',monospace;font-size:11px;font-weight:700;color:var(--t1);letter-spacing:.05em;}
+.pc-role{font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--cyan);letter-spacing:.08em;text-transform:uppercase;margin-top:2px;}
+.pc-nation{font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--t3);margin-top:2px;}
+.pc-achievement{font-family:'Rajdhani',sans-serif;font-size:11px;color:var(--t2);line-height:1.5;margin-top:8px;}
+
+/* AGENCIES */
+.agency-card{
+  background:var(--panel);border:1px solid var(--b1);padding:14px;
+  cursor:pointer;transition:all .2s;
+}
+.agency-card:hover{border-color:var(--b2);background:var(--elevated);}
+.ac-header{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.ac-icon{font-size:24px;}
+.ac-name{font-family:'Orbitron',monospace;font-size:11px;font-weight:700;color:var(--t1);}
+.ac-full{font-family:'Share Tech Mono',monospace;font-size:7px;color:var(--t3);letter-spacing:.05em;margin-top:2px;}
+.ac-desc{font-family:'Rajdhani',sans-serif;font-size:11px;color:var(--t3);line-height:1.5;margin-bottom:10px;}
+
+/* MODAL */
+#modal-overlay{
+  position:fixed;inset:0;background:rgba(0,4,8,.92);z-index:5000;
+  display:none;align-items:center;justify-content:center;
+  backdrop-filter:blur(4px);
+}
+#modal-overlay.open{display:flex;}
+#modal-box{
+  background:var(--surface);border:1px solid var(--b2);
+  width:90%;max-width:820px;max-height:88vh;
+  display:flex;flex-direction:column;position:relative;
+  box-shadow:0 0 60px rgba(0,212,255,.15);
+}
+.modal-header{
+  display:flex;align-items:center;gap:12px;padding:14px 18px;
+  border-bottom:1px solid var(--b1);flex-shrink:0;
+}
+.modal-title{font-family:'Orbitron',monospace;font-size:16px;font-weight:700;color:var(--t1);letter-spacing:.08em;}
+.modal-sub{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--cyan);letter-spacing:.1em;text-transform:uppercase;}
+.modal-close{
+  margin-left:auto;font-family:'Share Tech Mono',monospace;font-size:16px;
+  color:var(--t3);cursor:pointer;padding:4px 8px;border:1px solid var(--b1);
+  transition:all .2s;
+}
+.modal-close:hover{color:var(--red);border-color:rgba(255,51,85,.3);}
+.modal-body{overflow-y:auto;flex:1;padding:18px;}
+
+/* modal sections */
+.modal-section{margin-bottom:20px;}
+.modal-section-title{
+  font-family:'Orbitron',monospace;font-size:10px;font-weight:600;
+  color:var(--cyan);letter-spacing:.15em;text-transform:uppercase;
+  padding-bottom:6px;border-bottom:1px solid var(--b0);margin-bottom:10px;
+}
+.modal-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
+.modal-grid.cols3{grid-template-columns:repeat(3,1fr);}
+.modal-field{background:var(--panel);padding:8px 10px;}
+.mf-label{font-family:'Share Tech Mono',monospace;font-size:7px;letter-spacing:.12em;color:var(--t4);text-transform:uppercase;margin-bottom:3px;}
+.mf-value{font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:500;color:var(--t1);}
+.mission-row{
+  padding:8px 10px;border-bottom:1px solid var(--b0);
+  display:flex;align-items:center;gap:10px;cursor:pointer;
+  transition:background .15s;
+}
+.mission-row:hover{background:var(--b0);}
+.mr-year{font-family:'Orbitron',monospace;font-size:10px;color:var(--cyan);width:40px;flex-shrink:0;}
+.mr-info{flex:1;}
+.mr-name{font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;color:var(--t1);}
+.mr-type{font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--t3);margin-top:1px;text-transform:uppercase;}
+.mr-status{
+  font-family:'Share Tech Mono',monospace;font-size:7px;letter-spacing:.1em;
+  padding:2px 6px;text-transform:uppercase;flex-shrink:0;
+}
+.mr-status.completed{background:rgba(0,212,255,.08);color:var(--cyan);}
+.mr-status.active{background:rgba(0,255,136,.08);color:var(--green);}
+.mr-status.planned{background:rgba(168,85,247,.08);color:var(--purple);}
+.mr-status.failed{background:rgba(255,51,85,.08);color:var(--red);}
+.mr-status.deorbited{background:rgba(122,152,184,.08);color:var(--t3);}
+
+/* OSINT PANEL */
+.osint-tool{
+  background:var(--panel);border:1px solid var(--b1);padding:14px;
+  margin-bottom:8px;
+}
+.ot-title{font-family:'Orbitron',monospace;font-size:11px;font-weight:600;color:var(--cyan);letter-spacing:.1em;margin-bottom:6px;}
+.ot-desc{font-family:'Rajdhani',sans-serif;font-size:11px;color:var(--t2);line-height:1.5;margin-bottom:8px;}
+.ot-links{display:flex;gap:6px;flex-wrap:wrap;}
+.ot-link{
+  font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:.08em;
+  padding:4px 8px;border:1px solid var(--b1);color:var(--cyan);
+  cursor:pointer;transition:all .15s;text-decoration:none;text-transform:uppercase;
+}
+.ot-link:hover{border-color:var(--cyan);background:rgba(0,212,255,.06);}
+
+/* SEARCH BAR */
+.search-bar{
+  display:flex;align-items:center;gap:6px;padding:8px;
+  border-bottom:1px solid var(--b0);flex-shrink:0;background:var(--bg2);
+}
+.search-input{
+  flex:1;background:var(--panel);border:1px solid var(--b1);
+  color:var(--t1);font-family:'Share Tech Mono',monospace;font-size:10px;
+  padding:6px 10px;outline:none;transition:border-color .2s;letter-spacing:.05em;
+}
+.search-input:focus{border-color:var(--cyan);}
+.search-input::placeholder{color:var(--t4);}
+.search-btn{
+  background:rgba(0,212,255,.08);border:1px solid var(--b2);
+  color:var(--cyan);font-family:'Share Tech Mono',monospace;font-size:9px;
+  padding:6px 12px;cursor:pointer;transition:all .15s;letter-spacing:.08em;text-transform:uppercase;
+}
+.search-btn:hover{background:rgba(0,212,255,.15);}
+
+/* SECTION HEADER ROW */
+.section-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 12px;border-bottom:1px solid var(--b0);flex-shrink:0;
+}
+.section-title{
+  font-family:'Orbitron',monospace;font-size:11px;font-weight:600;
+  color:var(--t1);letter-spacing:.1em;text-transform:uppercase;
+}
+.section-count{
+  font-family:'Share Tech Mono',monospace;font-size:9px;
+  color:var(--cyan);background:rgba(0,212,255,.08);
+  padding:2px 8px;letter-spacing:.08em;
+}
+/* status bar */
+#statusbar{
+  display:flex;align-items:center;gap:12px;padding:3px 12px;
+  background:var(--bg2);border-top:1px solid var(--b0);flex-shrink:0;
+}
+.sb-item{font-family:'Share Tech Mono',monospace;font-size:7px;letter-spacing:.1em;color:var(--t4);text-transform:uppercase;display:flex;align-items:center;gap:4px;}
+.sb-item .sb-val{color:var(--t3);}
+.sb-sep{width:1px;height:10px;background:var(--b0);}
+/* Scrollable container within view */
+.scroll-container{overflow-y:auto;flex:1;}
+/* loading spinner */
+.spin-ring{
+  width:24px;height:24px;border:2px solid var(--b1);
+  border-top-color:var(--cyan);border-radius:50%;
+  animation:spin .8s linear infinite;display:inline-block;
+}
+/* orbit animation for intro elements */
+.orbit-container{position:relative;display:inline-block;}
+/* futuristic grid pattern */
+.grid-bg{
+  position:absolute;inset:0;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(0,212,255,.02) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,212,255,.02) 1px,transparent 1px);
+  background-size:40px 40px;
+}
+/* section view header */
+.view-header{
+  padding:12px 16px;border-bottom:1px solid var(--b1);flex-shrink:0;
+  display:flex;align-items:center;gap:12px;background:var(--bg2);
+}
+.view-header-title{
+  font-family:'Orbitron',monospace;font-size:14px;font-weight:700;
+  color:var(--t1);letter-spacing:.1em;text-transform:uppercase;
+}
+.view-header-sub{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--cyan);letter-spacing:.1em;}
+.view-header-icon{font-size:20px;}
+
+/* corner decorations */
+.corner-tl,.corner-tr,.corner-bl,.corner-br{
+  position:absolute;width:12px;height:12px;pointer-events:none;
+}
+.corner-tl{top:0;left:0;border-top:1px solid var(--cyan);border-left:1px solid var(--cyan);}
+.corner-tr{top:0;right:0;border-top:1px solid var(--cyan);border-right:1px solid var(--cyan);}
+.corner-bl{bottom:0;left:0;border-bottom:1px solid var(--cyan);border-left:1px solid var(--cyan);}
+.corner-br{bottom:0;right:0;border-bottom:1px solid var(--cyan);border-right:1px solid var(--cyan);}
+/* responsive */
+@media(max-width:1200px){
+  #sidebar-left{width:220px;}
+  #sidebar-right{width:200px;}
+}
+@media(max-width:900px){
+  #sidebar-right{display:none;}
+}
+/* scan line animation */
+@keyframes scanline{
+  0%{transform:translateY(-100%)}
+  100%{transform:translateY(100vh)}
+}
+.scanline{
+  position:fixed;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,rgba(0,212,255,.04),transparent);
+  animation:scanline 6s linear infinite;pointer-events:none;z-index:1000;
+}
+/* glow text */
+.glow{text-shadow:0 0 10px currentColor;}
+/* empty state */
+.empty-state{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  flex:1;gap:8px;padding:40px;
+}
+.es-icon{font-size:40px;opacity:.3;}
+.es-text{font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:.1em;color:var(--t4);text-transform:uppercase;}
+/* filter chips */
+.filter-bar{
+  display:flex;gap:4px;padding:6px 8px;border-bottom:1px solid var(--b0);
+  flex-shrink:0;overflow-x:auto;
+}
+.filter-chip{
+  font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:.08em;
+  padding:3px 8px;border:1px solid var(--b1);color:var(--t3);
+  cursor:pointer;transition:all .15s;white-space:nowrap;text-transform:uppercase;
+}
+.filter-chip:hover{border-color:var(--cyan);color:var(--cyan);}
+.filter-chip.active{border-color:var(--cyan);color:var(--cyan);background:rgba(0,212,255,.08);}
+/* tooltip */
+.tooltip{
+  position:absolute;background:var(--elevated);border:1px solid var(--b2);
+  padding:4px 8px;font-family:'Share Tech Mono',monospace;font-size:8px;
+  color:var(--t2);pointer-events:none;z-index:1000;white-space:nowrap;
+}
+</style>
+</head>
+<body>
+<div class="scanline"></div>
+
+<!-- ████████████████ LOADER ████████████████ -->
+<div id="loader">
+  <canvas id="loader-canvas"></canvas>
+  <div class="loader-content">
+    <div class="ld-emblem">
+      <div class="ld-ring"></div>
+      <div class="ld-ring"></div>
+      <div class="ld-ring"></div>
+      <div class="ld-core"></div>
+      <div class="ld-sat"></div>
+      <div class="ld-sat2"></div>
+    </div>
+    <div class="ld-title">RANASPACE</div>
+    <div class="ld-sub">Space Intelligence Platform &nbsp;|&nbsp; OSINT &amp; ORBITAL ANALYTICS</div>
+    <div class="ld-bar-wrap">
+      <div class="ld-bar-track"><div class="ld-bar-fill" id="ld-fill"></div></div>
+    </div>
+    <div class="ld-status" id="ld-status">INITIALIZING SYSTEMS...</div>
+    <div class="ld-tags" id="ld-tags">
+      <div class="ld-tag" id="lt1">ORBITAL DB</div>
+      <div class="ld-tag" id="lt2">NATION INTEL</div>
+      <div class="ld-tag" id="lt3">ROCKET MATRIX</div>
+      <div class="ld-tag" id="lt4">SAT TRACKING</div>
+      <div class="ld-tag" id="lt5">LIVE FEEDS</div>
+      <div class="ld-tag" id="lt6">3D RENDERER</div>
+      <div class="ld-tag" id="lt7">MAP ENGINE</div>
+      <div class="ld-tag" id="lt8">OSINT CORE</div>
+    </div>
+  </div>
+</div>
+
+<!-- ████████████████ MAIN APP ████████████████ -->
+<div id="app" style="display:none;flex:1;flex-direction:column;min-height:0;overflow:hidden;">
+
+<!-- HEADER -->
+<header id="hdr">
+  <div class="hdr-logo">
+    <div class="hdr-emblem">
+      <div class="hdr-ring"></div>
+      <div class="hdr-ring"></div>
+      <div class="hdr-dot"></div>
+    </div>
+    <div>
+      <div class="hdr-brand"><span>RANA</span>SPACE</div>
+      <div class="hdr-tagline">Space Intelligence Platform v2.0</div>
+    </div>
+  </div>
+  <div class="hdr-sep"></div>
+  <div class="live-badge"><span class="live-dot"></span>LIVE</div>
+  <div class="hdr-sep"></div>
+  <div class="hdr-stats">
+    <div class="hdr-stat"><span class="hdr-stat-label">Active Sats</span><span class="hdr-stat-val c">8,900+</span></div>
+    <div class="hdr-sep"></div>
+    <div class="hdr-stat"><span class="hdr-stat-label">Space Agencies</span><span class="hdr-stat-val o">72</span></div>
+    <div class="hdr-sep"></div>
+    <div class="hdr-stat"><span class="hdr-stat-label">Humans in Space</span><span class="hdr-stat-val g" id="hdr-crew">13</span></div>
+    <div class="hdr-sep"></div>
+    <div class="hdr-stat"><span class="hdr-stat-label">Launches 2024</span><span class="hdr-stat-val p">220+</span></div>
+  </div>
+  <div class="hdr-right">
+    <div>
+      <div id="utc-clock">00:00:00 UTC</div>
+      <div id="utc-date">LOADING...</div>
+    </div>
+    <div class="hdr-sep"></div>
+    <div class="threat-pill">ORBIT: NOMINAL</div>
+  </div>
+</header>
+
+<!-- TICKER -->
+<div id="ticker">
+  <div class="ticker-label">⚡ SPACE INTEL</div>
+  <div class="ticker-scroll">
+    <div class="ticker-inner" id="ticker-inner">
+      <span class="ticker-item"><span class="ti-dot"></span><span class="ti-cat">ISS</span> ISS crew at 7 — Expedition 72 operational</span>
+      <span class="ticker-item"><span class="ti-dot"></span><span class="ti-cat">STARSHIP</span> SpaceX Starship IFT-7 achieving full booster catch milestone</span>
+      <span class="ticker-item"><span class="ti-dot"></span><span class="ti-cat">ARTEMIS</span> NASA Artemis II crew training for 2025 lunar flyby mission</span>
+      <span class="ticker-item"><span class="ti-dot"></span><span class="ti-cat">CNSA</span> China's Chang'e 6 samples reveal new insights into lunar far side</span>
+      <span class="ticker-item"><span class="ti-dot"></span><span class="ti-cat">ISRO</span> Gaganyaan TV-D1 abort test success — crewed launch targeting 2025</span>
+      <span class="ticker-item"><span class="ti-dot"></span><span class="ti-cat">JWST</span> Webb detects water vapor in atmosphere of exoplanet GJ 9827d</span>
+      <span class="ticker-item"><span class="ti-dot"></span><span class="ti-cat">LAUNCHES</span> Starlink Group 6-62 — 23 satellites deployed to LEO</span>
+      <span class="ticker-item"><span class="ti-dot"></span><span class="ti-cat">TIANGONG</span> Shenzhou-19 crew conducts EVA for 9 hours 06 minutes</span>
+      <span class="ticker-item"><span class="ti-dot"></span><span class="ti-cat">UAE</span> Hope Mars Orbiter delivers 3-year Martian climate data archive</span>
+      <span class="ticker-item"><span class="ti-dot"></span><span class="ti-cat">ESA</span> Ariane 6 completes third successful commercial launch</span>
+      <!-- duplicate for seamless loop -->
+      <span class="ticker-item"><span class="ti-dot"></span><span class="ti-cat">ISS</span> ISS crew at 7 — Expedition 72 operational</span>
+      <span class="ticker-item"><span class="ti-dot"></span><span class="ti-cat">STARSHIP</span> SpaceX Starship IFT-7 achieving full booster catch milestone</span>
+      <span class="ticker-item"><span class="ti-dot"></span><span class="ti-cat">ARTEMIS</span> NASA Artemis II crew training for 2025 lunar flyby mission</span>
+      <span class="ticker-item"><span class="ti-dot"></span><span class="ti-cat">CNSA</span> China's Chang'e 6 samples reveal new insights into lunar far side</span>
+      <span class="ticker-item"><span class="ti-dot"></span><span class="ti-cat">ISRO</span> Gaganyaan TV-D1 abort test success — crewed launch targeting 2025</span>
+    </div>
+  </div>
+</div>
+
+<!-- NAV TABS -->
+<nav id="nav">
+  <div class="nav-tab active" onclick="switchTab('globe')" data-tab="globe"><span class="nt-icon">🌍</span>3D GLOBE</div>
+  <div class="nav-tab" onclick="switchTab('map2d')" data-tab="map2d"><span class="nt-icon">🗺️</span>2D MAP</div>
+  <div class="nav-tab" onclick="switchTab('nations')" data-tab="nations"><span class="nt-icon">🚀</span>NATIONS <span class="nt-count" id="nc-nations">20</span></div>
+  <div class="nav-tab" onclick="switchTab('rockets')" data-tab="rockets"><span class="nt-icon">🔥</span>ROCKETS <span class="nt-count" id="nc-rockets">18</span></div>
+  <div class="nav-tab" onclick="switchTab('satellites')" data-tab="satellites"><span class="nt-icon">📡</span>SATELLITES <span class="nt-count" id="nc-sats">12</span></div>
+  <div class="nav-tab" onclick="switchTab('launches')" data-tab="launches"><span class="nt-icon">⚡</span>LAUNCHES</div>
+  <div class="nav-tab" onclick="switchTab('missions')" data-tab="missions"><span class="nt-icon">🌌</span>MISSIONS</div>
+  <div class="nav-tab" onclick="switchTab('persons')" data-tab="persons"><span class="nt-icon">👨‍🚀</span>KEY PERSONS</div>
+  <div class="nav-tab" onclick="switchTab('agencies')" data-tab="agencies"><span class="nt-icon">🏢</span>AGENCIES</div>
+  <div class="nav-tab" onclick="switchTab('news')" data-tab="news"><span class="nt-icon">📰</span>LIVE NEWS</div>
+  <div class="nav-tab" onclick="switchTab('osint')" data-tab="osint"><span class="nt-icon">🔍</span>OSINT</div>
+</nav>
+
+<!-- MAIN -->
+<div id="main">
+
+  <!-- ══ LEFT SIDEBAR ══ -->
+  <div id="sidebar-left">
+    <!-- orbit stats -->
+    <div class="panel">
+      <div class="ph"><span class="ph-title"><span class="ph-icon">◈</span>ORBITAL STATUS</span><span class="ph-right" id="orb-time">LIVE</span></div>
+      <div class="stat-grid">
+        <div class="sg-cell"><div class="sg-label">LEO Objects</div><div class="sg-value c">4,890</div><div class="sg-sub">< 2000km altitude</div></div>
+        <div class="sg-cell"><div class="sg-label">MEO Objects</div><div class="sg-value o">138</div><div class="sg-sub">2000-35786km</div></div>
+        <div class="sg-cell"><div class="sg-label">GEO Objects</div><div class="sg-value g">573</div><div class="sg-sub">~35,786km</div></div>
+        <div class="sg-cell"><div class="sg-label">Debris Tracked</div><div class="sg-value" style="color:var(--red)">28,000+</div><div class="sg-sub">10cm+ radar tracked</div></div>
+      </div>
+    </div>
+    <div class="div-line"></div>
+    <!-- ISS info -->
+    <div class="panel">
+      <div class="ph"><span class="ph-title"><span class="ph-icon">◈</span>ISS STATUS</span><span class="ph-right">EXP 72</span></div>
+      <div style="padding:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <span style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--t3);text-transform:uppercase;">Altitude</span>
+          <span style="font-family:'Orbitron',monospace;font-size:11px;color:var(--cyan);">408 km</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <span style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--t3);text-transform:uppercase;">Speed</span>
+          <span style="font-family:'Orbitron',monospace;font-size:11px;color:var(--orange);">7.66 km/s</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <span style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--t3);text-transform:uppercase;">Crew</span>
+          <span style="font-family:'Orbitron',monospace;font-size:11px;color:var(--green);">7 aboard</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--t3);text-transform:uppercase;">Orbit Period</span>
+          <span style="font-family:'Orbitron',monospace;font-size:11px;color:var(--t1);">92 min</span>
+        </div>
+        <div style="margin-top:8px;height:2px;background:var(--b0);overflow:hidden;">
+          <div style="height:100%;width:73%;background:linear-gradient(90deg,var(--green),var(--cyan));"></div>
+        </div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:7px;color:var(--t4);text-transform:uppercase;margin-top:3px;">73% orbit complete</div>
+      </div>
+    </div>
+    <div class="div-line"></div>
+    <!-- Space weather -->
+    <div class="panel">
+      <div class="ph"><span class="ph-title"><span class="ph-icon">◈</span>SPACE WEATHER</span><span class="ph-right">NOAA</span></div>
+      <div style="padding:8px;display:flex;flex-direction:column;gap:6px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--t3);text-transform:uppercase;">Solar Wind</span>
+          <span style="font-family:'Orbitron',monospace;font-size:10px;color:var(--orange);">420 km/s</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--t3);text-transform:uppercase;">Kp Index</span>
+          <span style="font-family:'Orbitron',monospace;font-size:10px;color:var(--green);">2.33 (Quiet)</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--t3);text-transform:uppercase;">X-Ray Flux</span>
+          <span style="font-family:'Orbitron',monospace;font-size:10px;color:var(--cyan);">A2.3 (Low)</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--t3);text-transform:uppercase;">Solar Cycle</span>
+          <span style="font-family:'Orbitron',monospace;font-size:10px;color:var(--amber);">Cycle 25 Active</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--t3);text-transform:uppercase;">Geomag Storm</span>
+          <span style="font-family:'Orbitron',monospace;font-size:10px;color:var(--green);">NONE</span>
+        </div>
+      </div>
+    </div>
+    <div class="div-line"></div>
+    <!-- Latest events -->
+    <div class="panel grow">
+      <div class="ph"><span class="ph-title"><span class="ph-icon">◈</span>RECENT EVENTS</span></div>
+      <div class="pb" style="font-size:10px;">
+        <div class="list-item" style="cursor:default;">
+          <div class="li-info">
+            <div class="li-name" style="font-size:11px;color:var(--cyan);">Starship IFT-7</div>
+            <div class="li-sub">SpaceX — Full booster catch #3</div>
+          </div>
+          <div class="li-badge active">SUCCESS</div>
+        </div>
+        <div class="list-item" style="cursor:default;">
+          <div class="li-info">
+            <div class="li-name" style="font-size:11px;color:var(--orange);">Shenzhou-19</div>
+            <div class="li-sub">China — 9h EVA completed</div>
+          </div>
+          <div class="li-badge active">ACTIVE</div>
+        </div>
+        <div class="list-item" style="cursor:default;">
+          <div class="li-info">
+            <div class="li-name" style="font-size:11px;color:var(--t1);">Ariane 6 Flight 3</div>
+            <div class="li-sub">ESA — Commercial payload to GTO</div>
+          </div>
+          <div class="li-badge active">SUCCESS</div>
+        </div>
+        <div class="list-item" style="cursor:default;">
+          <div class="li-info">
+            <div class="li-name" style="font-size:11px;color:var(--t1);">NURI KSLV-II</div>
+            <div class="li-sub">KARI — Next Korea launch prep</div>
+          </div>
+          <div class="li-badge dev">PLANNED</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ CONTENT AREA ══ -->
+  <div id="content">
+
+    <!-- 3D GLOBE VIEW -->
+    <div class="view active" id="view-globe" style="position:relative;overflow:hidden;">
+      <canvas id="globe3d-canvas" style="width:100%;height:100%;display:block;"></canvas>
+      <!-- Overlay panels -->
+      <div class="globe-info-panel">
+        <div class="corner-tl"></div><div class="corner-tr"></div><div class="corner-bl"></div><div class="corner-br"></div>
+        <div class="globe-info-title">🌍 ORBITAL OVERVIEW</div>
+        <div class="globe-metric"><span class="gm-label">Total Satellites</span><span class="gm-val" style="color:var(--cyan);">8,900+</span></div>
+        <div class="globe-metric"><span class="gm-label">LEO Starlink</span><span class="gm-val" style="color:var(--orange);">6,000+</span></div>
+        <div class="globe-metric"><span class="gm-label">Space Stations</span><span class="gm-val" style="color:var(--green);">2</span></div>
+        <div class="globe-metric"><span class="gm-label">Debris Objects</span><span class="gm-val" style="color:var(--red);">28,000+</span></div>
+        <div class="globe-metric"><span class="gm-label">ISS Altitude</span><span class="gm-val">408 km</span></div>
+        <div class="globe-metric"><span class="gm-label">Current View</span><span class="gm-val" id="globe-view-label">GLOBAL</span></div>
+      </div>
+      <div class="globe-legend">
+        <div class="corner-tl"></div><div class="corner-br"></div>
+        <div class="legend-item"><div class="legend-dot" style="background:#00d4ff;box-shadow:0 0 4px #00d4ff;"></div><div class="legend-label">Active Satellites</div></div>
+        <div class="legend-item"><div class="legend-dot" style="background:#ff6b35;box-shadow:0 0 4px #ff6b35;"></div><div class="legend-label">Space Stations</div></div>
+        <div class="legend-item"><div class="legend-dot" style="background:#00ff88;box-shadow:0 0 4px #00ff88;"></div><div class="legend-label">Observation Sats</div></div>
+        <div class="legend-item"><div class="legend-dot" style="background:#a855f7;box-shadow:0 0 4px #a855f7;"></div><div class="legend-label">Navigation (GPS/GNSS)</div></div>
+        <div class="legend-item"><div class="legend-dot" style="background:#ff3355;"></div><div class="legend-label">Debris Tracked</div></div>
+      </div>
+      <div class="globe-controls">
+        <div class="globe-btn active" onclick="globeOrbitToggle(this)">⟳ AUTO-ROTATE</div>
+        <div class="globe-btn" onclick="globeLayerToggle('sat')">📡 SATELLITES</div>
+        <div class="globe-btn" onclick="globeLayerToggle('orbit')">○ ORBITS</div>
+        <div class="globe-btn" onclick="globeLayerToggle('debris')">⚠ DEBRIS</div>
+        <div class="globe-btn" onclick="globeLayerToggle('station')">🏠 STATIONS</div>
+      </div>
+    </div>
+
+    <!-- 2D MAP VIEW -->
+    <div class="view" id="view-map2d" style="overflow:hidden;">
+      <div id="map2d-container" style="width:100%;height:100%;"></div>
+    </div>
+
+    <!-- NATIONS VIEW -->
+    <div class="view" id="view-nations" style="flex-direction:column;">
+      <div class="view-header">
+        <span class="view-header-icon">🚀</span>
+        <div>
+          <div class="view-header-title">NATION SPACE PROGRAMS</div>
+          <div class="view-header-sub">Click any nation to explore missions, rockets, satellites &amp; key persons</div>
+        </div>
+        <div style="margin-left:auto;">
+          <div class="section-count" id="nations-count">20 NATIONS</div>
+        </div>
+      </div>
+      <div class="search-bar">
+        <input class="search-input" id="nations-search" placeholder="Search nations, agencies..." oninput="filterNations(this.value)"/>
+        <div class="search-btn" onclick="filterNations('')">ALL</div>
+      </div>
+      <div class="filter-bar">
+        <div class="filter-chip active" onclick="filterNationType('all',this)">ALL</div>
+        <div class="filter-chip" onclick="filterNationType('major',this)">MAJOR POWERS</div>
+        <div class="filter-chip" onclick="filterNationType('asia',this)">ASIA-PACIFIC</div>
+        <div class="filter-chip" onclick="filterNationType('europe',this)">EUROPE</div>
+        <div class="filter-chip" onclick="filterNationType('middleeast',this)">MIDDLE EAST</div>
+        <div class="filter-chip" onclick="filterNationType('emerging',this)">EMERGING</div>
+      </div>
+      <div class="scroll-container">
+        <div class="grid-view cols-3" id="nations-grid" style="padding:12px;gap:10px;"></div>
+      </div>
+    </div>
+
+    <!-- ROCKETS VIEW -->
+    <div class="view" id="view-rockets" style="flex-direction:column;">
+      <div class="view-header">
+        <span class="view-header-icon">🔥</span>
+        <div>
+          <div class="view-header-title">LAUNCH VEHICLE DATABASE</div>
+          <div class="view-header-sub">Complete orbital rocket specifications &amp; history</div>
+        </div>
+        <div style="margin-left:auto;">
+          <div class="section-count" id="rockets-count">18 VEHICLES</div>
+        </div>
+      </div>
+      <div class="filter-bar">
+        <div class="filter-chip active" onclick="filterRockets('all',this)">ALL</div>
+        <div class="filter-chip" onclick="filterRockets('active',this)">ACTIVE</div>
+        <div class="filter-chip" onclick="filterRockets('retired',this)">RETIRED</div>
+        <div class="filter-chip" onclick="filterRockets('development',this)">IN DEVELOPMENT</div>
+        <div class="filter-chip" onclick="filterRockets('superheavy',this)">SUPER HEAVY</div>
+        <div class="filter-chip" onclick="filterRockets('reusable',this)">REUSABLE</div>
+      </div>
+      <div class="scroll-container">
+        <div class="grid-view cols-3" id="rockets-grid" style="padding:12px;gap:10px;"></div>
+      </div>
+    </div>
+
+    <!-- SATELLITES VIEW -->
+    <div class="view" id="view-satellites" style="flex-direction:column;">
+      <div class="view-header">
+        <span class="view-header-icon">📡</span>
+        <div>
+          <div class="view-header-title">SATELLITE INTELLIGENCE</div>
+          <div class="view-header-sub">Space assets — orbit parameters, instruments &amp; operators</div>
+        </div>
+      </div>
+      <div class="filter-bar">
+        <div class="filter-chip active" onclick="filterSats('all',this)">ALL</div>
+        <div class="filter-chip" onclick="filterSats('station',this)">STATIONS</div>
+        <div class="filter-chip" onclick="filterSats('telescope',this)">TELESCOPES</div>
+        <div class="filter-chip" onclick="filterSats('navigation',this)">NAVIGATION</div>
+        <div class="filter-chip" onclick="filterSats('broadband',this)">BROADBAND</div>
+        <div class="filter-chip" onclick="filterSats('planetary',this)">PLANETARY</div>
+      </div>
+      <div class="scroll-container">
+        <div class="grid-view cols-3" id="sats-grid" style="padding:12px;gap:10px;"></div>
+      </div>
+    </div>
+
+    <!-- LAUNCHES VIEW -->
+    <div class="view" id="view-launches" style="flex-direction:column;">
+      <div class="view-header">
+        <span class="view-header-icon">⚡</span>
+        <div>
+          <div class="view-header-title">UPCOMING &amp; RECENT LAUNCHES</div>
+          <div class="view-header-sub">Live launch schedule from Launch Library 2</div>
+        </div>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:6px;">
+          <div class="live-badge"><span class="live-dot"></span>LIVE DATA</div>
+        </div>
+      </div>
+      <div class="scroll-container">
+        <div id="launches-container" style="padding:8px;"></div>
+      </div>
+    </div>
+
+    <!-- MISSIONS VIEW -->
+    <div class="view" id="view-missions" style="flex-direction:column;">
+      <div class="view-header">
+        <span class="view-header-icon">🌌</span>
+        <div>
+          <div class="view-header-title">SPACE MISSIONS ARCHIVE</div>
+          <div class="view-header-sub">Landmark missions across all eras and nations</div>
+        </div>
+      </div>
+      <div class="filter-bar">
+        <div class="filter-chip active" onclick="filterMissions('all',this)">ALL</div>
+        <div class="filter-chip" onclick="filterMissions('lunar',this)">LUNAR</div>
+        <div class="filter-chip" onclick="filterMissions('mars',this)">MARS</div>
+        <div class="filter-chip" onclick="filterMissions('crewed',this)">CREWED</div>
+        <div class="filter-chip" onclick="filterMissions('telescope',this)">TELESCOPE</div>
+        <div class="filter-chip" onclick="filterMissions('station',this)">STATION</div>
+        <div class="filter-chip" onclick="filterMissions('probe',this)">DEEP SPACE</div>
+      </div>
+      <div class="scroll-container">
+        <div class="grid-view cols-2" id="missions-grid" style="padding:12px;gap:10px;"></div>
+      </div>
+    </div>
+
+    <!-- PERSONS VIEW -->
+    <div class="view" id="view-persons" style="flex-direction:column;">
+      <div class="view-header">
+        <span class="view-header-icon">👨‍🚀</span>
+        <div>
+          <div class="view-header-title">KEY PERSONS IN SPACE HISTORY</div>
+          <div class="view-header-sub">Astronauts, cosmonauts, engineers &amp; visionaries</div>
+        </div>
+      </div>
+      <div class="scroll-container">
+        <div class="grid-view cols-3" id="persons-grid" style="padding:12px;gap:10px;"></div>
+      </div>
+    </div>
+
+    <!-- AGENCIES VIEW -->
+    <div class="view" id="view-agencies" style="flex-direction:column;">
+      <div class="view-header">
+        <span class="view-header-icon">🏢</span>
+        <div>
+          <div class="view-header-title">SPACE AGENCIES &amp; PRIVATE COMPANIES</div>
+          <div class="view-header-sub">Government agencies and leading commercial operators</div>
+        </div>
+      </div>
+      <div class="filter-bar">
+        <div class="filter-chip active" onclick="filterAgencies('all',this)">ALL</div>
+        <div class="filter-chip" onclick="filterAgencies('government',this)">GOVERNMENT</div>
+        <div class="filter-chip" onclick="filterAgencies('private',this)">PRIVATE</div>
+      </div>
+      <div class="scroll-container">
+        <div class="grid-view cols-2" id="agencies-grid" style="padding:12px;gap:10px;"></div>
+      </div>
+    </div>
+
+    <!-- NEWS VIEW -->
+    <div class="view" id="view-news" style="flex-direction:column;">
+      <div class="view-header">
+        <span class="view-header-icon">📰</span>
+        <div>
+          <div class="view-header-title">LIVE SPACE NEWS</div>
+          <div class="view-header-sub">Real-time feed from SpaceflightNewsAPI</div>
+        </div>
+        <div style="margin-left:auto;">
+          <div class="live-badge" id="news-status"><span class="live-dot"></span>LOADING...</div>
+        </div>
+      </div>
+      <div class="scroll-container">
+        <div id="news-container" style="padding:0;">
+          <div class="empty-state"><div class="spin-ring"></div><div class="es-text">Fetching live space news...</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OSINT VIEW -->
+    <div class="view" id="view-osint" style="flex-direction:column;">
+      <div class="view-header">
+        <span class="view-header-icon">🔍</span>
+        <div>
+          <div class="view-header-title">SPACE OSINT TOOLKIT</div>
+          <div class="view-header-sub">Open-source intelligence resources for space monitoring</div>
+        </div>
+      </div>
+      <div class="scroll-container">
+        <div id="osint-container" style="padding:12px;display:grid;grid-template-columns:repeat(2,1fr);gap:10px;align-content:start;"></div>
+      </div>
+    </div>
+
+  </div><!-- end #content -->
+
+  <!-- ══ RIGHT SIDEBAR ══ -->
+  <div id="sidebar-right">
+    <div class="panel">
+      <div class="ph"><span class="ph-title"><span class="ph-icon">◈</span>NATIONS INDEX</span></div>
+      <div style="overflow-y:auto;flex:1;max-height:220px;" class="pb">
+        <div id="quick-nations" style="display:flex;flex-direction:column;gap:0;"></div>
+      </div>
+    </div>
+    <div class="div-line"></div>
+    <div class="panel">
+      <div class="ph"><span class="ph-title"><span class="ph-icon">◈</span>NEXT LAUNCHES</span><span class="ph-right">LL2</span></div>
+      <div class="pb" id="sidebar-launches" style="display:flex;flex-direction:column;gap:0;">
+        <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--t4);text-transform:uppercase;padding:8px;">Loading...</div>
+      </div>
+    </div>
+    <div class="div-line"></div>
+    <div class="panel grow">
+      <div class="ph"><span class="ph-title"><span class="ph-icon">◈</span>TOP PRIVATE CO.</span></div>
+      <div class="pb">
+        <div class="list-item" onclick="openAgencyModal('SpaceX')"><div class="li-flag">🚀</div><div class="li-info"><div class="li-name">SpaceX</div><div class="li-sub">250+ orbital launches</div></div><div class="li-badge active">LEADER</div></div>
+        <div class="list-item" onclick="openAgencyModal('Rocket Lab')"><div class="li-flag">⚡</div><div class="li-info"><div class="li-name">Rocket Lab</div><div class="li-sub">50+ Electron launches</div></div><div class="li-badge active">ACTIVE</div></div>
+        <div class="list-item" onclick="openAgencyModal('Blue Origin')"><div class="li-flag">🔵</div><div class="li-info"><div class="li-name">Blue Origin</div><div class="li-sub">New Glenn orbital</div></div><div class="li-badge dev">GROWING</div></div>
+        <div class="list-item" onclick="openAgencyModal('Axiom Space')"><div class="li-flag">🏠</div><div class="li-info"><div class="li-name">Axiom Space</div><div class="li-sub">Private ISS missions</div></div><div class="li-badge active">ACTIVE</div></div>
+        <div class="list-item" onclick="openAgencyModal('Planet Labs')"><div class="li-flag">🌍</div><div class="li-info"><div class="li-name">Planet Labs</div><div class="li-sub">Daily Earth imaging</div></div><div class="li-badge active">ACTIVE</div></div>
+        <div class="list-item" onclick="openAgencyModal('Virgin Galactic')"><div class="li-flag">✈️</div><div class="li-info"><div class="li-name">Virgin Galactic</div><div class="li-sub">Space tourism</div></div><div class="li-badge dev">PAUSED</div></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end #main -->
+
+<!-- STATUS BAR -->
+<div id="statusbar">
+  <div class="sb-item">SYS <span class="sb-val" style="color:var(--green);">NOMINAL</span></div>
+  <div class="sb-sep"></div>
+  <div class="sb-item">FEED <span class="sb-val">LIVE</span></div>
+  <div class="sb-sep"></div>
+  <div class="sb-item">DB <span class="sb-val">v2.0</span></div>
+  <div class="sb-sep"></div>
+  <div class="sb-item">NATIONS <span class="sb-val">20</span></div>
+  <div class="sb-sep"></div>
+  <div class="sb-item">ROCKETS <span class="sb-val">18</span></div>
+  <div class="sb-sep"></div>
+  <div class="sb-item">SATELLITES <span class="sb-val">12 KEY</span></div>
+  <div class="sb-sep"></div>
+  <div class="sb-item">CLASSIFIED <span class="sb-val" style="color:var(--red);">REDACTED</span></div>
+  <div style="margin-left:auto;" class="sb-item">RANASPACE OSINT PLATFORM © 2025 &nbsp;<span class="sb-val" style="color:var(--cyan);">ALL RIGHTS RESERVED</span></div>
+</div>
+
+</div><!-- end #app -->
+
+<!-- ████████████████ MODAL ████████████████ -->
+<div id="modal-overlay" onclick="closeModalOverlay(event)">
+  <div id="modal-box">
+    <div class="modal-header">
+      <div id="modal-icon" style="font-size:28px;"></div>
+      <div>
+        <div class="modal-title" id="modal-title">Loading...</div>
+        <div class="modal-sub" id="modal-sub"></div>
+      </div>
+      <div class="modal-close" onclick="closeModal()">✕ CLOSE</div>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+//  DATA
+// ═══════════════════════════════════════════════════
+const NATIONS = {
+  USA:{flag:'🇺🇸',name:'United States',agency:'NASA',budget:'$25.4B',category:['major'],satellites:91,missions:340,rockets:8,color:'#1a8cff',hq:'Washington D.C.',director:'Bill Nelson',founded:1958,
+    missionList:[
+      {name:'Apollo 11',year:1969,type:'Crewed Lunar',status:'completed',desc:'First crewed Moon landing. Armstrong & Aldrin walked on lunar surface. 382kg samples returned.',rocket:'Saturn V',crew:['Neil Armstrong','Buzz Aldrin','Michael Collins']},
+      {name:'Voyager 1',year:1977,type:'Interplanetary Probe',status:'active',desc:'Most distant human-made object — in interstellar space. Still transmitting after 47 years at 24 billion km.',rocket:'Titan IIIE'},
+      {name:'Hubble Space Telescope',year:1990,type:'Space Observatory',status:'active',desc:'1.5M+ observations. Confirmed dark energy. Measured Hubble constant. 35 years of revolutions in astronomy.',rocket:'Space Shuttle Discovery'},
+      {name:'James Webb Space Telescope',year:2021,type:'Infrared Observatory',status:'active',desc:'Most powerful telescope ever. 6.5m mirror. Observes first galaxies, analyzes exoplanet atmospheres at Sun-Earth L2.',rocket:'Ariane 5 ECA+'},
+      {name:'Artemis I',year:2022,type:'Lunar Mission',status:'completed',desc:'Uncrewed Orion+SLS test. 26-day mission around Moon. Perfect dress rehearsal for Artemis II crewed mission.',rocket:'SLS Block 1'},
+      {name:'Perseverance Rover',year:2020,type:'Mars Rover',status:'active',desc:'Searching ancient biosignatures in Jezero Crater. Ingenuity helicopter proved Mars powered flight.',rocket:'Atlas V 541'},
+      {name:'DART Mission',year:2021,type:'Planetary Defense',status:'completed',desc:'First planetary defense test. Changed asteroid Dimorphos orbit by 33 minutes. Slammed at 6.1 km/s.',rocket:'Falcon 9'},
+    ],
+    rocketList:['Saturn V','Space Shuttle','SLS Block 1','Atlas V','Delta IV Heavy','Falcon 9','Falcon Heavy','Starship'],
+    satList:['ISS','Hubble','JWST','GPS Block III','GOES-18','Landsat 9','TESS','Chandra'],
+    persons:['Neil Armstrong','Buzz Aldrin','Sally Ride','Wernher von Braun','Bill Nelson','Elon Musk']
+  },
+  RUSSIA:{flag:'🇷🇺',name:'Russia',agency:'Roscosmos',budget:'$2.7B',category:['major'],satellites:180,missions:240,rockets:6,color:'#ff4444',hq:'Moscow',director:'Yuri Borisov',founded:1992,
+    missionList:[
+      {name:'Sputnik 1',year:1957,type:'Satellite',status:'completed',desc:'World\'s first artificial satellite. Started the Space Age. Shocked the West, ignited Space Race.',rocket:'Sputnik-PS'},
+      {name:'Vostok 1',year:1961,type:'Crewed',status:'completed',desc:'Gagarin: first human in space. 108-minute single orbit at 327km. "Poyekhali!" April 12, 1961.',rocket:'Vostok-K',crew:['Yuri Gagarin']},
+      {name:'Luna 9',year:1966,type:'Lunar Lander',status:'completed',desc:'First successful soft Moon landing. Returned first panoramic lunar surface images.',rocket:'Molniya-M'},
+      {name:'Mir Space Station',year:1986,type:'Space Station',status:'deorbited',desc:'First modular space station. 1986–2001. Set long-duration spaceflight records.',rocket:'Proton-K'},
+      {name:'Luna 25',year:2023,type:'Lunar Lander',status:'failed',desc:'Russia\'s first Moon mission in 47 years. Crashed Aug 19, 2023 due to engine burn error.',rocket:'Soyuz-2.1b'},
+    ],
+    rocketList:['Soyuz-2','Proton-M','Angara A5','Rokot','Zenit','Dnepr'],
+    satList:['GLONASS constellation','ISS (Zvezda/Zarya)','Kosmos-2560','Elektro-L4','Resurs-P4'],
+    persons:['Yuri Gagarin','Sergei Korolev','Valentina Tereshkova','Oleg Novitsky']
+  },
+  CHINA:{flag:'🇨🇳',name:'China',agency:'CNSA',budget:'$15B est.',category:['major','asia'],satellites:560,missions:190,rockets:8,color:'#ff8800',hq:'Beijing',director:'Zhang Keijian',founded:1993,
+    missionList:[
+      {name:'Shenzhou 5',year:2003,type:'Crewed',status:'completed',desc:'China\'s first crewed spaceflight. Yang Liwei orbited Earth 14 times. 3rd nation for human spaceflight.',rocket:'Long March 2F',crew:['Yang Liwei']},
+      {name:"Chang'e 4 + Yutu-2",year:2018,type:'Lunar Far-Side',status:'active',desc:'First far-side Moon landing. Yutu-2 rover still operational after 5+ years. Queqiao relay satellite.',rocket:'Long March 3B'},
+      {name:'Tianwen-1',year:2020,type:'Mars Mission',status:'active',desc:"China's first Mars mission. Zhurong rover explored Utopia Planitia.",rocket:'Long March 5'},
+      {name:'Tiangong CSS',year:2021,type:'Space Station',status:'active',desc:'T-shaped modular station. Tianhe+Wentian+Mengtian. Permanent 3-person crew. China\'s independent outpost.',rocket:'Long March 5B'},
+      {name:"Chang'e 6",year:2024,type:'Sample Return',status:'completed',desc:'First far-side sample return. 1.9kg from South Pole-Aitken basin — most ancient pristine lunar material.',rocket:'Long March 5'},
+    ],
+    rocketList:['Long March 5','Long March 7','Long March 2F','Long March 3B','Kuaizhou-1A','ZhuQue-2'],
+    satList:['BeiDou Navigation','Gaofen-12','Yaogan-39','Tianlian-2','Tiangong CSS'],
+    persons:['Yang Liwei','Wu Weiren','Zhang Keijian','Ye Peijian','Deng Qingming']
+  },
+  INDIA:{flag:'🇮🇳',name:'India',agency:'ISRO',budget:'$1.65B',category:['major','asia'],satellites:53,missions:130,rockets:4,color:'#ff9933',hq:'Bengaluru',director:'S. Somanath',founded:1969,
+    missionList:[
+      {name:'Chandrayaan-3',year:2023,type:'Lunar Lander',status:'completed',desc:'Historic south-pole Moon landing. 4th nation to land on Moon. Confirmed sulfur, iron, oxygen on surface.',rocket:'LVM3 M4'},
+      {name:'Mangalyaan (MOM)',year:2013,type:'Mars Orbiter',status:'completed',desc:'First Mars mission, succeeded on first attempt. $74M — cheapest Mars mission ever. Greatest ISRO achievement.',rocket:'PSLV-C25'},
+      {name:'Aditya-L1',year:2023,type:'Solar Observatory',status:'active',desc:"India's first solar mission at Sun-Earth L1. Studying corona, CMEs, space weather.",rocket:'PSLV-C57'},
+      {name:'PSLV-C37 (104 sats)',year:2017,type:'Satellite Launch',status:'completed',desc:'World record: 104 satellites in one launch. Broke Russian record. Validated India as launch provider.',rocket:'PSLV-XL'},
+      {name:'Gaganyaan (upcoming)',year:2025,type:'Crewed',status:'planned',desc:"India's first crewed flight. 4 astronauts selected. TV-D1 abort test success. 3-day LEO mission.",rocket:'LVM3'},
+    ],
+    rocketList:['PSLV-XL','PSLV-C','GSLV Mk II','LVM3','SSLV'],
+    satList:['NavIC/IRNSS','IRNSS-1I','GSAT-30','Cartosat-3','Resourcesat-2A'],
+    persons:['Vikram Sarabhai','A.P.J. Abdul Kalam','K. Sivan','S. Somanath','Prashanth Nair']
+  },
+  ESA:{flag:'🇪🇺',name:'Europe (ESA)',agency:'ESA',budget:'$9.5B',category:['major','europe'],satellites:70,missions:120,rockets:4,color:'#0055a4',hq:'Paris, France',director:'Josef Aschbacher',founded:1975,
+    missionList:[
+      {name:'Rosetta / Philae',year:2004,type:'Comet Mission',status:'completed',desc:'First orbit and landing on a comet (67P). 10-year, 6.4B-km journey revealed comet origins.',rocket:'Ariane 5G+'},
+      {name:'Gaia',year:2013,type:'Astrometry',status:'active',desc:'Mapping 1.8 billion stars. Largest 3D stellar map in history. Reveals Milky Way structure.',rocket:'Soyuz-STB'},
+      {name:'BepiColombo',year:2018,type:'Mercury Mission',status:'active',desc:'Joint ESA-JAXA to Mercury. Arriving 2025. Will study interior and magnetic field.',rocket:'Ariane 5 ECA+'},
+      {name:'Euclid',year:2023,type:'Dark Energy Survey',status:'active',desc:'Mapping dark matter and energy across 10 billion light-years. 1/3 of sky survey.',rocket:'Falcon 9'},
+    ],
+    rocketList:['Ariane 5','Ariane 6','Vega','Vega-C'],
+    satList:['Galileo constellation','Copernicus Sentinels','Meteosat','XMM-Newton'],
+    persons:['Josef Aschbacher','Thomas Pesquet','Samantha Cristoforetti','Alexander Gerst']
+  },
+  JAPAN:{flag:'🇯🇵',name:'Japan',agency:'JAXA',budget:'$2.3B',category:['major','asia'],satellites:48,missions:90,rockets:4,color:'#bc002d',hq:'Chōfu, Tokyo',director:'Hiroshi Yamakawa',founded:2003,
+    missionList:[
+      {name:'Hayabusa2',year:2014,type:'Asteroid Sample Return',status:'completed',desc:'Collected samples from asteroid Ryugu. 5.4g returned 2020. First sub-surface asteroid sampling.',rocket:'H-IIA 202'},
+      {name:'SLIM',year:2023,type:'Lunar Lander',status:'completed',desc:'Smart Lander — 55-meter pinpoint landing accuracy. First precision Moon landing. Japan 5th lunar lander.',rocket:'H-IIA 202'},
+      {name:'Akatsuki',year:2010,type:'Venus Orbiter',status:'active',desc:'Studying Venusian atmosphere. Failed first insertion; succeeded 5 years later on second attempt.',rocket:'H-IIA 202'},
+    ],
+    rocketList:['H-IIA','H-IIB','H3','Epsilon'],
+    satList:['Himawari-9','ALOS-4','QZSS Michibiki','Kibo (ISS)'],
+    persons:['Hiroshi Yamakawa','Makoto Yoshikawa','Satoshi Furukawa','Koichi Wakata']
+  },
+  UAE:{flag:'🇦🇪',name:'UAE',agency:'UAESA',budget:'$900M',category:['middleeast'],satellites:12,missions:5,rockets:0,color:'#009f3d',hq:'Abu Dhabi',director:'Salem Al Qubaisi',founded:2014,
+    missionList:[
+      {name:'Hope Mars Mission (EMM)',year:2020,type:'Mars Orbiter',status:'active',desc:'First Arab spacecraft at Mars. First global Martian atmospheric climate dataset.',rocket:'H-IIA 202 (JAXA)'},
+      {name:'Rashid Rover',year:2022,type:'Lunar Rover',status:'failed',desc:'First Arab lunar rover. ispace Hakuto-R lander crashed at ~100m altitude.',rocket:'Falcon 9'},
+    ],
+    rocketList:['Commercial launches only'],
+    satList:['DubaiSat-2','KhalifaSat','Yahsat-1A'],
+    persons:['Hazza Al Mansoori','Sultan Al Neyadi','Sarah Al Amiri']
+  },
+  SOUTH_KOREA:{flag:'🇰🇷',name:'South Korea',agency:'KARI',budget:'$700M',category:['asia'],satellites:18,missions:12,rockets:2,color:'#003478',hq:'Daejeon',director:'Lee Sang-ryul',founded:1989,
+    missionList:[
+      {name:'Danuri (KPLO)',year:2022,type:'Lunar Orbiter',status:'active',desc:"Korea's first Moon mission. ShadowCam imaging permanently shadowed craters.",rocket:'Falcon 9'},
+      {name:'KSLV-II Nuri',year:2022,type:'Rocket Test',status:'completed',desc:'First all-domestic orbital launch success. Korea joins elite orbital launch club.',rocket:'KSLV-II Nuri'},
+    ],
+    rocketList:['KSLV-II Nuri','KSLV-III (planned)'],
+    satList:['Cheollian-2A/2B','Arirang-5','KOMPSAT-3A'],
+    persons:['Lee Sang-ryul','Yi So-yeon','Noh Dong-hyun']
+  },
+  ISRAEL:{flag:'🇮🇱',name:'Israel',agency:'ISA',budget:'$175M',category:['middleeast'],satellites:16,missions:25,rockets:1,color:'#0038b8',hq:'Jerusalem',director:'Uri Oron',founded:1983,
+    missionList:[
+      {name:'Beresheet',year:2019,type:'Lunar Lander',status:'failed',desc:'First private lunar lander attempt. Crashed during final descent. Gyroscope reset chain reaction.',rocket:'Falcon 9'},
+      {name:'Ofek-16',year:2020,type:'Military Recon',status:'active',desc:'Israeli military optical reconnaissance satellite. Part of classified Ofek family.',rocket:'Shavit'},
+    ],
+    rocketList:['Shavit (westward military launch)'],
+    satList:['EROS-C','Ofek series (classified)','TecSAR'],
+    persons:['Uri Oron','Ilan Ramon (died 2003)','Eytan Stibbe']
+  },
+  IRAN:{flag:'🇮🇷',name:'Iran',agency:'ISA',budget:'$200M est.',category:['middleeast'],satellites:8,missions:15,rockets:4,color:'#239f40',hq:'Tehran',director:'Hassan Salarieh',founded:2003,
+    missionList:[
+      {name:'Omid',year:2009,type:'Satellite',status:'completed',desc:"Iran's first domestically built and launched satellite.",rocket:'Safir'},
+      {name:'Nour-1',year:2020,type:'Military Satellite',status:'active',desc:'First IRGC military satellite. Imaging satellite in SSO.',rocket:'Qased'},
+    ],
+    rocketList:['Safir','Simorgh','Qased','Qaem-100'],
+    satList:['Nour-1','Khayyam','Rasad','Navid'],
+    persons:['Hassan Salarieh']
+  },
+  FRANCE:{flag:'🇫🇷',name:'France',agency:'CNES',budget:'$2.6B',category:['europe'],satellites:35,missions:90,rockets:2,color:'#0055a4',hq:'Paris',director:'Philippe Baptiste',founded:1961,
+    missionList:[
+      {name:'COROT',year:2006,type:'Exoplanet Telescope',status:'deorbited',desc:'World\'s first exoplanet-hunting telescope. Discovered 32 confirmed exoplanets.',rocket:'Soyuz-2.1b'},
+      {name:'Spot Constellation',year:1986,type:'Earth Observation',status:'active',desc:'Pioneer high-resolution commercial Earth observation. Standard for commercial imagery.',rocket:'Ariane'},
+    ],
+    rocketList:['Ariane 5','Ariane 6 (ArianeGroup)'],
+    satList:['Spot-7','Pleiades Neo-1','Jason-3'],
+    persons:['Philippe Baptiste','Thomas Pesquet','Claudie Haigneré']
+  },
+  GERMANY:{flag:'🇩🇪',name:'Germany',agency:'DLR',budget:'$1.2B',category:['europe'],satellites:22,missions:60,rockets:0,color:'#222222',hq:'Cologne',director:'Walther Pelzer',founded:1969,
+    missionList:[
+      {name:'TerraSAR-X',year:2007,type:'SAR Satellite',status:'active',desc:'1m resolution synthetic aperture radar. Disaster monitoring and defense applications.',rocket:'Dnepr'},
+      {name:'EnMAP',year:2022,type:'Hyperspectral',status:'active',desc:'242 spectral bands, 30m resolution. Maps Earth\'s surface chemistry.',rocket:'Falcon 9'},
+    ],
+    rocketList:['Uses ESA/commercial'],
+    satList:['TerraSAR-X','TanDEM-X','EnMAP'],
+    persons:['Walther Pelzer','Alexander Gerst','Matthias Maurer']
+  },
+  CANADA:{flag:'🇨🇦',name:'Canada',agency:'CSA',budget:'$450M',category:['major'],satellites:15,missions:30,rockets:0,color:'#ff0000',hq:'Saint-Hubert, Quebec',director:'Lisa Campbell',founded:1989,
+    missionList:[
+      {name:'Canadarm2 on ISS',year:2001,type:'Robotic Arm',status:'active',desc:'17.6m robotic arm. Critical for ISS construction, cargo berthing, spacewalk support.',rocket:'STS-100'},
+      {name:'RADARSAT Constellation',year:2019,type:'SAR Constellation',status:'active',desc:'3-satellite C-band SAR. Maritime surveillance, Arctic monitoring, daily Canada coverage.',rocket:'Falcon 9'},
+    ],
+    rocketList:['Uses commercial launches'],
+    satList:['RADARSAT-2','RADARSAT Constellation','SCISAT','Canadarm2 (ISS)'],
+    persons:['Lisa Campbell','Chris Hadfield','Roberta Bondar','Jeremy Hansen']
+  },
+  UK:{flag:'🇬🇧',name:'United Kingdom',agency:'UKSA',budget:'$820M',category:['europe'],satellites:30,missions:40,rockets:0,color:'#012169',hq:'Swindon',director:'Paul Bate',founded:2010,
+    missionList:[
+      {name:'OneWeb Broadband',year:2019,type:'LEO Broadband',status:'active',desc:'648-satellite LEO constellation. Eutelsat OneWeb after merger.',rocket:'Soyuz/Ariane 6'},
+      {name:'Skynet Military Comms',year:1969,type:'Military Comms',status:'active',desc:'UK military satellite communications network. Skynet 6 in development.',rocket:'Various'},
+    ],
+    rocketList:['Uses ESA/commercial'],
+    satList:['Skynet 6A','OneWeb constellation','Carbonite-2'],
+    persons:['Paul Bate','Tim Peake','Helen Sharman']
+  },
+  TURKEY:{flag:'🇹🇷',name:'Turkey',agency:'TUA',budget:'$250M',category:['emerging'],satellites:8,missions:10,rockets:0,color:'#e30a17',hq:'Ankara',director:'Y.H. Kurtoğlu',founded:2018,
+    missionList:[
+      {name:'IMECE',year:2023,type:'Earth Observation',status:'active',desc:"Turkey's first domestic 1.2m resolution satellite. Used for defense and civilian mapping.",rocket:'Falcon 9'},
+      {name:'Türksat 5A/5B',year:2021,type:'Communication',status:'active',desc:'High-throughput GEO comm satellites serving Turkey, Europe, Middle East, Africa.',rocket:'Falcon 9'},
+    ],
+    rocketList:['Future orbital rocket by 2030'],
+    satList:['Türksat 4A/4B/5A/5B','IMECE','Göktürk-1/2'],
+    persons:['Alper Gezeravcı (ISS 2024)']
+  },
+  SAUDI_ARABIA:{flag:'🇸🇦',name:'Saudi Arabia',agency:'SSA',budget:'$2.5B Vision 2030',category:['middleeast'],satellites:10,missions:8,rockets:0,color:'#006c35',hq:'Riyadh',director:'Mohammed Al-Tamimi',founded:2018,
+    missionList:[
+      {name:'Axiom Mission 2',year:2023,type:'Crewed ISS',status:'completed',desc:'Rayyanah Barnawi (first Arab woman in space) + Ali Al-Qarni flew to ISS.',rocket:'Falcon 9',crew:['Rayyanah Barnawi','Ali Al-Qarni']},
+      {name:'Arabsat-6A',year:2019,type:'Communication',status:'active',desc:'GEO satellite for Middle East, Africa, Europe on first commercial Falcon Heavy.',rocket:'Falcon Heavy'},
+    ],
+    rocketList:['Commercial launches only'],
+    satList:['Arabsat-6A','SGS-1/2','SaudiSat series'],
+    persons:['Rayyanah Barnawi','Ali Al-Qarni','Mohammed Al-Tamimi']
+  },
+  PAKISTAN:{flag:'🇵🇰',name:'Pakistan',agency:'SUPARCO',budget:'$30M est.',category:['asia','emerging'],satellites:5,missions:8,rockets:0,color:'#01411c',hq:'Karachi',director:'M. Yusuf Khan',founded:1961,
+    missionList:[
+      {name:'iCube Qamar',year:2023,type:'Lunar CubeSat',status:'completed',desc:"Pakistan's first lunar mission aboard Chang'e 6 orbiter. Captured Moon images from orbit.",rocket:"Long March 5 (China)"},
+      {name:'PRSS-1',year:2018,type:'Remote Sensing',status:'active',desc:'Joint Pakistan-China 1m resolution Earth observation satellite.',rocket:'Long March 2D (China)'},
+    ],
+    rocketList:['Uses Chinese launches'],
+    satList:['PakSAT-1R','PRSS-1','MM1','iCube Qamar'],
+    persons:['Salim Mehmood']
+  },
+  AUSTRALIA:{flag:'🇦🇺',name:'Australia',agency:'ASA',budget:'$700M 10yr',category:['asia','emerging'],satellites:12,missions:8,rockets:0,color:'#00008b',hq:'Adelaide',director:'Enrico Palermo',founded:2018,
+    missionList:[
+      {name:'WRESAT',year:1967,type:'Satellite',status:'completed',desc:'Australia\'s first satellite from Woomera. 3rd nation to launch from own territory.',rocket:'Sparta (USA)'},
+    ],
+    rocketList:['None (uses commercial)'],
+    satList:['Optus series','NBN Co satellites'],
+    persons:['Enrico Palermo','Andy Thomas']
+  },
+  BRAZIL:{flag:'🇧🇷',name:'Brazil',agency:'AEB',budget:'$200M',category:['emerging'],satellites:8,missions:20,rockets:0,color:'#009c3b',hq:'Brasília',director:'Carlos Moura',founded:1994,
+    missionList:[
+      {name:'Amazonia-1',year:2021,type:'Earth Observation',status:'active',desc:'First fully indigenous Brazilian satellite. Monitoring Amazon deforestation. Launched by ISRO.',rocket:'PSLV-C51 (India)'},
+      {name:'SCD-1',year:1993,type:'Environmental Monitor',status:'active',desc:'Brazil\'s first satellite — still operational after 30+ years.',rocket:'Pegasus (USA)'},
+    ],
+    rocketList:['VLM (planned)'],
+    satList:['SCD-1','CBERS-4A','Amazonia-1','SGDC'],
+    persons:['Marcos Pontes (Brazil\'s first astronaut)','Carlos Moura']
+  },
+  NEW_ZEALAND:{flag:'🇳🇿',name:'New Zealand',agency:'NZSA',budget:'$16M',category:['asia','emerging'],satellites:4,missions:60,rockets:2,color:'#00247d',hq:'Wellington',director:'Peter Crabtree',founded:2016,
+    missionList:[
+      {name:'Electron Commercial Launches',year:2017,type:'Small Sat Deployment',status:'active',desc:'50+ Electron launches from Māhia Peninsula. 2nd most frequent orbital rocket globally.',rocket:'Electron (Rocket Lab)'},
+    ],
+    rocketList:['Electron','Neutron (Rocket Lab, dev)'],
+    satList:['FossaSat-1','Commercial payloads'],
+    persons:['Peter Beck (Rocket Lab CEO)','Peter Crabtree']
+  },
+};
+
+const ROCKETS=[
+  {id:'saturn5',name:'Saturn V',country:'USA 🇺🇸',operator:'NASA',status:'retired',height:'110.6m',mass:'2,970,000kg',leo:'130,000kg',gto:'48,600kg',engines:'F-1×5 + J-2×5',fuel:'RP-1/LOX + LH2/LOX',flights:'13',success:'92.3%',first:'1967',reusable:false,notable:'Most powerful rocket ever flown. Launched all Apollo Moon missions. Total thrust 34,500 kN.',categories:['retired','superheavy']},
+  {id:'falcon9',name:'Falcon 9',country:'USA 🇺🇸',operator:'SpaceX',status:'active',height:'70m',mass:'549,054kg',leo:'22,800kg',gto:'8,300kg',engines:'Merlin 1D×9',fuel:'RP-1/LOX',flights:'260+',success:'98.7%',first:'2010',reusable:true,notable:"World's most frequently flown rocket. Booster re-used 20+ times. Lowest cost per kg.",categories:['active','reusable']},
+  {id:'falconheavy',name:'Falcon Heavy',country:'USA 🇺🇸',operator:'SpaceX',status:'active',height:'70m',mass:'1,420,788kg',leo:'63,800kg',gto:'26,700kg',engines:'Merlin 1D×27',fuel:'RP-1/LOX',flights:'9',success:'100%',first:'2018',reusable:true,notable:"World's most powerful operational rocket. Side boosters land simultaneously.",categories:['active','reusable','superheavy']},
+  {id:'starship',name:'Starship',country:'USA 🇺🇸',operator:'SpaceX',status:'development',height:'121m',mass:'5,000,000kg',leo:'150,000+kg',gto:'21,000kg',engines:'Raptor×33 + Raptor×6',fuel:'CH4/LOX',flights:'7 tests',success:'Dev',first:'2023',reusable:true,notable:'Most powerful rocket ever built. Mechazilla catches booster. Artemis lunar lander.',categories:['development','reusable','superheavy']},
+  {id:'sls',name:'SLS Block 1',country:'USA 🇺🇸',operator:'NASA',status:'active',height:'98m',mass:'2,608,000kg',leo:'95,000kg',gto:'27,000kg (TLI)',engines:'RS-25×4 + SRB×2',fuel:'LH2/LOX + Solid',flights:'1',success:'100%',first:'2022',reusable:false,notable:'Powers Artemis Moon return. Currently most powerful flying rocket.',categories:['active','superheavy']},
+  {id:'lm5',name:'Long March 5',country:'China 🇨🇳',operator:'CASC',status:'active',height:'56.97m',mass:'869,000kg',leo:'25,000kg',gto:'14,000kg',engines:'YF-77×2 + YF-100×4',fuel:'LH2/LOX + UDMH',flights:'9',success:'88.9%',first:'2016',reusable:false,notable:"China's most powerful rocket. Used for Chang'e, Tianwen-1, Tiangong.",categories:['active','superheavy']},
+  {id:'lm2f',name:'Long March 2F',country:'China 🇨🇳',operator:'CASC',status:'active',height:'62m',mass:'493,000kg',leo:'8,130kg',gto:'—',engines:'YF-20B×4 + YF-21B',fuel:'UDMH/N₂O₄',flights:'16',success:'100%',first:'1999',reusable:false,notable:"China's human spaceflight rocket. 100% crewed success. Carries Shenzhou capsules.",categories:['active']},
+  {id:'pslv',name:'PSLV-XL',country:'India 🇮🇳',operator:'ISRO',status:'active',height:'44m',mass:'320,000kg',leo:'3,800kg',gto:'1,400kg',engines:'6-stage alternate solid/liquid',fuel:'HTPB + UDMH/N₂O₄',flights:'62+',success:'96.7%',first:'1994',reusable:false,notable:"India's workhorse. 104-satellite world record. Launched Chandrayaan, Mangalyaan.",categories:['active']},
+  {id:'lvm3',name:'LVM3 (GSLV Mk III)',country:'India 🇮🇳',operator:'ISRO',status:'active',height:'43.5m',mass:'640,000kg',leo:'10,000kg',gto:'4,000kg',engines:'Vikas×2 + CE-20',fuel:'HTPB + UDMH + LH2/LOX',flights:'7',success:'100%',first:'2014',reusable:false,notable:'Perfect 7/7. Launched Chandrayaan-3 and OneWeb. Largest Indian rocket.',categories:['active']},
+  {id:'soyuz2',name:'Soyuz-2',country:'Russia 🇷🇺',operator:'Roscosmos',status:'active',height:'46.3m',mass:'312,000kg',leo:'8,200kg',gto:'3,250kg',engines:'RD-107A×4 + RD-108A',fuel:'RP-1/LOX',flights:'70+',success:'97%',first:'2004',reusable:false,notable:'Evolved from 1960s Sputnik rocket. Sole crewed ISS access 2011–2020.',categories:['active']},
+  {id:'proton',name:'Proton-M',country:'Russia 🇷🇺',operator:'Roscosmos',status:'active',height:'58.2m',mass:'705,000kg',leo:'23,000kg',gto:'6,300kg',engines:'RD-276×6',fuel:'UDMH/N₂O₄',flights:'110+',success:'89%',first:'1965',reusable:false,notable:'Heavy-lift workhorse. Launched ISS Zarya/Zvezda. Highly toxic propellants.',categories:['active']},
+  {id:'ariane6',name:'Ariane 6',country:'Europe 🇪🇺',operator:'ArianeGroup',status:'active',height:'62m',mass:'860,000kg',leo:'21,600kg',gto:'11,500kg',engines:'Vulcain 2.1 + P120C×4',fuel:'LH2/LOX + Solid',flights:'2',success:'50%',first:'2024',reusable:false,notable:'European flagship successor to Ariane 5. Reignitable Vinci upper stage.',categories:['active']},
+  {id:'ariane5',name:'Ariane 5',country:'Europe 🇪🇺',operator:'ArianeGroup',status:'retired',height:'52m',mass:'780,000kg',leo:'21,000kg',gto:'10,865kg',engines:'Vulcain 2 + SRB×2',fuel:'LH2/LOX + Solid',flights:'116',success:'95.7%',first:'1996',reusable:false,notable:'27-year European workhorse. Launched JWST. Retired 2023 after 117 missions.',categories:['retired']},
+  {id:'h3',name:'H3',country:'Japan 🇯🇵',operator:'JAXA/MHI',status:'active',height:'57-63m',mass:'574,000kg',leo:'6,500kg',gto:'2,000kg',engines:'LE-9×2-3 + SRB-3',fuel:'LH2/LOX',flights:'3',success:'66.7%',first:'2024',reusable:false,notable:'Japan\'s next-gen rocket. Twice the capability of H-IIA at lower cost.',categories:['active']},
+  {id:'electron',name:'Electron',country:'NZ/USA 🇳🇿🇺🇸',operator:'Rocket Lab',status:'active',height:'18m',mass:'13,000kg',leo:'300kg',gto:'—',engines:'Rutherford×9 (3D-printed)',fuel:'RP-1/LOX',flights:'52+',success:'92%',first:'2017',reusable:true,notable:'3D-printed engines. Electric pumps. Most useful small launcher. Helicopter recovery tested.',categories:['active','reusable']},
+  {id:'newglenn',name:'New Glenn',country:'USA 🇺🇸',operator:'Blue Origin',status:'active',height:'98m',mass:'1,000,000kg',leo:'45,000kg',gto:'13,000kg',engines:'BE-4×7 + BE-3U×2',fuel:'CH4/LOX + LH2/LOX',flights:'2',success:'50%',first:'2025',reusable:true,notable:"Blue Origin's first orbital rocket. Named after John Glenn. 7m fairing.",categories:['active','reusable']},
+  {id:'angara',name:'Angara A5',country:'Russia 🇷🇺',operator:'Roscosmos',status:'active',height:'64m',mass:'773,000kg',leo:'24,500kg',gto:'7,500kg',engines:'RD-191×5',fuel:'RP-1/LOX',flights:'5',success:'100%',first:'2014',reusable:false,notable:"Russia's clean-fuel heavy rocket. Modular design. Eventual Proton-M replacement.",categories:['active']},
+  {id:'kslv2',name:'KSLV-II Nuri',country:'South Korea 🇰🇷',operator:'KARI',status:'active',height:'47.2m',mass:'200,000kg',leo:'2,600kg',gto:'—',engines:'KRE-075×4 + ×1 + KRE-007',fuel:'RP-1/LOX',flights:'3',success:'66.7%',first:'2021',reusable:false,notable:'South Korea\'s first all-indigenous orbital launch vehicle.',categories:['active']},
+];
+
+const SATELLITES_DATA=[
+  {name:'International Space Station',type:'station',ops:'NASA/Roscosmos/JAXA/ESA/CSA',orbit:'LEO 408km 51.6°',launched:'1998',status:'active',mass:'420,000 kg',crew:7,desc:'Largest human-made space structure. 109m wide. 15-nation partnership. Continuous habitation since Nov 2000. 25+ years of microgravity science.',instruments:['Columbus lab (ESA)','Kibo lab (JAXA)','Destiny US Lab','Canadarm2','16 solar arrays','Cupola observation dome']},
+  {name:'James Webb Space Telescope',type:'telescope',ops:'NASA/ESA/CSA',orbit:'Sun-Earth L2 1.5M km',launched:'2021',status:'active',mass:'6,200 kg',desc:'Most powerful telescope. 6.5m gold-segmented mirror. Sees Big Bang-era galaxies. Analyzes exoplanet atmospheres. Infrared vision through cosmic dust.',instruments:['NIRCam (primary camera)','NIRSpec (spectrograph)','MIRI (mid-infrared)','FGS/NIRISS']},
+  {name:'Hubble Space Telescope',type:'telescope',ops:'NASA/ESA',orbit:'LEO 547km 28.5°',launched:'1990',status:'active',mass:'11,110 kg',desc:'35+ years of revolution. 1.5M+ observations. Confirmed dark energy, measured Hubble constant, found Pluto moons. Still producing groundbreaking science.',instruments:['WFC3 (Wide Field Camera 3)','ACS (Advanced Camera)','STIS (spectrograph)','COS','Fine Guidance Sensors']},
+  {name:'GPS Block III Constellation',type:'navigation',ops:'US Space Force',orbit:'MEO 20,200km 55°',launched:'1978–present',status:'active',mass:'2,161 kg/sat',desc:'31 operational satellites. <30cm military accuracy. Global navigation for billions of devices, aviation, shipping, precision agriculture and military.',instruments:['L1/L2/L5 nav signals','Nuclear detonation detectors','COSPAS-SARSAT SAR']},
+  {name:'Starlink Constellation',type:'broadband',ops:'SpaceX',orbit:'LEO 340–570km',launched:'2019–present',status:'active',mass:'~800 kg/v2 sat',desc:'6,000+ active satellites. Largest constellation ever. 100–220 Mbps globally. Used in Ukraine war. Next-gen v3 with 30Gbps inter-satellite laser links.',instruments:['Phased array antennas','Inter-satellite laser links (v1.5+)','Hall-effect ion thrusters']},
+  {name:'BeiDou BDS-3',type:'navigation',ops:'CNSA',orbit:'LEO/MEO/GEO multi-shell',launched:'2000–2020',status:'active',mass:'1,000–5,000 kg',desc:"China's global navigation — 35 operational satellites (3 GEO, 3 IGSO, 24 MEO). Centimeter accuracy over Asia-Pacific. 4th full global nav system.",instruments:['B1/B2/B3 nav signals','Short message service','SBAS augmentation']},
+  {name:'Galileo Constellation',type:'navigation',ops:'EUSPA / ESA',orbit:'MEO 23,222km 56°',launched:'2011–present',status:'active',mass:'732 kg/sat',desc:"Europe's independent GPS. 30 operational satellites. 1m civilian accuracy. Standard in all modern smartphones. Built entirely by European industry.",instruments:['E1/E5a/E5b/E6 nav signals','Search & Rescue transponders']},
+  {name:'GLONASS Constellation',type:'navigation',ops:'Russian Space Forces',orbit:'MEO 19,100km 64.8°',launched:'1982–present',status:'active',mass:'1,415 kg/sat',desc:"Russia's GPS equivalent. 24 operational satellites. 64.8° inclination gives exceptional Arctic coverage. GLONASS-K2 new open signal generation.",instruments:['L1/L2/L3 CDMA/FDMA signals','K2 L3 open civil signal']},
+  {name:'Tiangong CSS',type:'station',ops:'CNSA/CMSA',orbit:'LEO 390km 41.5°',launched:'2021–2022',status:'active',mass:'100,000+ kg',crew:3,desc:"China's T-shaped modular space station: Tianhe core + Wentian + Mengtian. Permanent 3-person crew. CSST 2m telescope planned to fly in formation.",instruments:['Life science labs','Materials science','Earth observation','Fluid physics','2m space telescope (planned)']},
+  {name:'Chandrayaan-3 Vikram',type:'planetary',ops:'ISRO',orbit:'Lunar surface 69.4°S',launched:'2023',status:'completed',mass:'3,900 kg total',desc:'First Moon south-pole landing Aug 23 2023. Pragyan rover confirmed sulfur, iron, calcium, oxygen. India 4th lunar soft-lander nation.',instruments:['RAMBHA-LP plasma','ChaSTE thermal probe','ILSA seismometer','APXS X-ray spectrometer','LIBS spectroscopy']},
+  {name:'Hope Mars Orbiter (EMM)',type:'planetary',ops:'UAE MBRSC',orbit:'Mars 22,000–44,000km',launched:'2020',status:'active',mass:'1,350 kg',desc:"UAE's historic first interplanetary probe. Generated world's first complete global Martian atmospheric climate dataset showing seasonal evolution.",instruments:['EXI camera (Emirates eXploration Imager)','EMIRS infrared spectrometer','EMUS UV spectrometer']},
+  {name:'NavIC / IRNSS',type:'navigation',ops:'ISRO',orbit:'GEO + GSO 29°',launched:'2013–2018',status:'active',mass:'1,425 kg/sat',desc:"India's regional navigation system. 7 satellites covering India + 1,500km area. 10m civilian accuracy. NavIC mandatory in Indian smartphones since 2020.",instruments:['L5/S-band nav signals','Ranging CDMA','SPS (Standard)','RS (Restricted/military)']},
+];
+
+const KEY_PERSONS=[
+  {name:'Yuri Gagarin',role:'Cosmonaut',nation:'Russia',born:'Mar 9, 1934',died:'Mar 27, 1968',initials:'YG',color:'#ff4444',achievement:"First human in space. Vostok 1, April 12, 1961. 108 minutes, single orbit at 327km. Global icon. Died in jet crash age 34. April 12 is World Space Day."},
+  {name:'Neil Armstrong',role:'Astronaut / Commander',nation:'USA',born:'Aug 5, 1930',died:'Aug 25, 2012',initials:'NA',color:'#1a8cff',achievement:"First human to walk on the Moon. Apollo 11, July 20, 1969. 'One small step...' 21.5kg of lunar samples. Test pilot and MIT graduate."},
+  {name:'Sergei Korolev',role:'Chief Designer',nation:'Russia',born:'Jan 12, 1907',died:'Jan 14, 1966',initials:'SK',color:'#ff8800',achievement:"Father of Soviet space program. Designed Sputnik, Vostok, Soyuz, R-7. Identity was state secret until death. Survived Stalin's Gulag."},
+  {name:'Wernher von Braun',role:'Rocket Engineer',nation:'USA/Germany',born:'Mar 23, 1912',died:'Jun 16, 1977',initials:'WvB',color:'#00d4ff',achievement:"Designed Saturn V that took humans to Moon. Built V-2 in WWII. Led NASA Marshall Center. Pioneered space colonization vision."},
+  {name:'Valentina Tereshkova',role:'Cosmonaut',nation:'Russia',born:'Mar 6, 1937',died:'Living (87)',initials:'VT',color:'#a855f7',achievement:"First woman in space. Vostok 6, 1963. 48 orbits in 3 days. Only woman to fly solo spaceflight. Former Soviet Parliament member."},
+  {name:'S. Somanath',role:'ISRO Chairman',nation:'India',born:'Jul 12, 1964',died:'Living',initials:'SS',color:'#ff9933',achievement:"Led historic Chandrayaan-3 south-pole Moon landing. Structural dynamics expert. Overseeing Gaganyaan crewed mission. Transformed ISRO globally."},
+  {name:'Elon Musk',role:'CEO SpaceX',nation:'USA',born:'Jun 28, 1971',died:'Living',initials:'EM',color:'#00ff88',achievement:"Founded SpaceX 2002. Pioneered reusable rockets. Plans Mars colonization. 260+ Falcon 9 flights. Mechazilla booster catch. World's most impactful space entrepreneur."},
+  {name:'Vikram Sarabhai',role:'ISRO Founder',nation:'India',born:'Aug 12, 1919',died:'Dec 30, 1971',initials:'VS',color:'#ffd700',achievement:"Father of India's space program. Founded ISRO 1969. Established Thumba rocket station. His vision made India a space power."},
+  {name:'Yang Liwei',role:'Taikonaut',nation:'China',born:'Jun 21, 1965',died:'Living',initials:'YL',color:'#ff8800',achievement:"First Chinese in space. Shenzhou 5, Oct 15, 2003. 14 orbits in 21 hours. National hero. Launched China's human spaceflight era."},
+  {name:'Chris Hadfield',role:'CSA Astronaut / Commander',nation:'Canada',born:'Aug 29, 1959',died:'Living',initials:'CH',color:'#ff0000',achievement:"First Canadian spacewalk. Commander ISS Expedition 35. Famous 'Space Oddity' video in orbit. 2,336 orbits. Space communicator."},
+  {name:'Hazza Al Mansoori',role:'Astronaut',nation:'UAE',born:'1981',died:'Living',initials:'HA',color:'#009f3d',achievement:"First Emirati in space. ISS Soyuz MS-15, 2019. 8-day mission. Inspired entire Arab world. Carrier fighter pilot turned space hero."},
+  {name:'A.P.J. Abdul Kalam',role:'Scientist / President',nation:'India',born:'Oct 15, 1931',died:'Jul 27, 2015',initials:'AK',color:'#ff9933',achievement:"Missile Man of India. Developed SLV-3, PSLV, Agni missiles. India's 11th President. 'People's President'. Most beloved Indian scientist."},
+  {name:'Peter Beck',role:'CEO Rocket Lab',nation:'New Zealand',born:'1976',died:'Living',initials:'PB',color:'#00247d',achievement:"Built Electron from NZ garage to 2nd most-flown rocket globally. 3D-printed engines, electric pumps. Developing Neutron medium rocket."},
+  {name:'Kalpana Chawla',role:'Astronaut',nation:'USA/India',born:'Mar 17, 1962',died:'Feb 1, 2003',initials:'KC',color:'#1a8cff',achievement:"First Indian-born woman in space (STS-87, 1997). Died in Columbia disaster. National hero in India. ISRO named weather satellite after her."},
+];
+
+const PRIVATE_AGENCIES=[
+  {name:'SpaceX',fullName:'Space Exploration Technologies',type:'private',country:'USA',founded:2002,founder:'Elon Musk',logo:'🚀',rockets:['Falcon 9','Falcon Heavy','Starship'],notable:"World's most active launch provider. 260+ F9 flights. First private crewed orbit. Mechazilla booster catch. Starlink 6,000+ sats.",focus:'Orbital launch, Crewed, Mars'},
+  {name:'Blue Origin',fullName:'Blue Origin LLC',type:'private',country:'USA',founded:2000,founder:'Jeff Bezos',logo:'🔵',rockets:['New Shepard','New Glenn'],notable:'First reusable vertical-landing rocket (2015). BE-4 engine powers ULA Vulcan. New Glenn heavy orbital. Blue Moon lunar lander for Artemis.',focus:'Reusable rockets, Tourism, Lunar'},
+  {name:'Rocket Lab',fullName:'Rocket Lab USA Inc.',type:'private',country:'NZ/USA',founded:2006,founder:'Peter Beck',logo:'⚡',rockets:['Electron','Neutron (dev)'],notable:"2nd most-flown orbital rocket globally. 3D-printed engines. Helicopter recovery. 300kg payload workhorse. Revenue $245M (2023).",focus:'Small satellite launch'},
+  {name:'Axiom Space',fullName:'Axiom Space Inc.',type:'private',country:'USA',founded:2016,founder:'Michael Suffredini',logo:'🏠',rockets:['Falcon 9 (contracted)'],notable:'First all-private ISS missions (Ax-1 through Ax-4). Saudi, ESA, Turkish, Emirati astronauts flown. Building private station module.',focus:'Private ISS missions, Private station'},
+  {name:'Planet Labs',fullName:'Planet Labs PBC',type:'private',country:'USA',founded:2010,founder:'Will Marshall',logo:'🌍',rockets:['Electron','PSLV','Transporter'],notable:'200+ Dove cubesats. Daily full-Earth imaging at 3m resolution. First daily agriculture and deforestation monitoring at global scale.',focus:'Earth imaging, Daily monitoring'},
+  {name:'Maxar Technologies',fullName:'Maxar Technologies Inc.',type:'private',country:'USA',founded:1969,founder:'Various (merged)',logo:'📷',rockets:['Various commercial'],notable:'WorldView Legion 30cm resolution. Supplies satellite imagery to US DoD, NGA, Google Maps. GeoEye-1 highest-res commercial satellite.',focus:'High-res Earth intelligence'},
+  {name:'Iridium',fullName:'Iridium Communications Inc.',type:'private',country:'USA',founded:1991,founder:'Motorola',logo:'📡',rockets:['Falcon 9 (Iridium NEXT)'],notable:'66-satellite LEO constellation. Global voice and data — incl. poles. Used by military, aviation, maritime, explorers. Real-time global coverage.',focus:'Global satellite communications'},
+  {name:'OneWeb (Eutelsat)',fullName:'Eutelsat OneWeb',type:'private',country:'UK/France',founded:2012,founder:'Greg Wyler',logo:'🌐',rockets:['Soyuz (early)','Ariane 6'],notable:'648-satellite LEO broadband. $1.7B UK government acquisition. 50Mbps+ global internet. Active in Arctic, aviation, maritime, enterprise.',focus:'LEO broadband internet'},
+  {name:'Virgin Galactic',fullName:'Virgin Galactic Holdings',type:'private',country:'USA',founded:2004,founder:'Richard Branson',logo:'🛸',rockets:['SpaceShipTwo Unity','Delta class (planned)'],notable:'First commercial suborbital spaceplane. Branson flew July 2021. Italian AF payload flights. Paused 2023, developing next-gen Delta class.',focus:'Suborbital space tourism'},
+  {name:'Relativity Space',fullName:'Relativity Space Inc.',type:'private',country:'USA',founded:2015,founder:'Tim Ellis',logo:'🔧',rockets:['Terran 1 (retired)','Terran R (dev)'],notable:'3D-printed rocket (Terran 1) first 3D-printed rocket to space (partial). Terran R fully reusable medium-class in development with 20,000kg LEO.',focus:'3D-printed reusable rockets'},
+];
+
+const OSINT_TOOLS=[
+  {title:'Space-Track.org (18th SDS)',desc:'Official US Space Force satellite catalog. 50,000+ tracked objects with TLE orbital elements. Conjunction/collision analysis. Free registration required.',cat:'ORBITAL TRACKING',links:['space-track.org','celestrak.org','n2yo.com']},
+  {title:'NASA JPL Horizons',desc:'Ephemeris data for all solar system bodies, spacecraft, and asteroids. Precise positional data for mission planning and observation.',cat:'EPHEMERIS & TRAJECTORY',links:['ssd.jpl.nasa.gov/horizons','eyes.nasa.gov','solarsystem.nasa.gov']},
+  {title:'Heavens-Above Satellite Tracker',desc:'Real-time satellite passes, ISS flyover predictions, iridium flares, Starlink trains. Observer-specific predictions worldwide.',cat:'VISUAL OBSERVATION',links:['heavens-above.com','stellarium-web.org','ISS-detector.com']},
+  {title:'Launch Library 2 API',desc:'RocketLaunch.live and Launch Library API provide structured data on upcoming/past launches, vehicles, agencies, missions, pads.',cat:'LAUNCH INTELLIGENCE',links:['ll.thespacedevs.com','rocketlaunch.live','launchschedule.io']},
+  {title:'Spaceweather.com / NOAA SWPC',desc:'Real-time solar activity, sunspot numbers, X-ray flux, geomagnetic storm alerts. Critical for satellite operations and astronaut safety.',cat:'SPACE WEATHER',links:['spaceweather.com','swpc.noaa.gov','solarmonitor.org']},
+  {title:'Zarya.info / NASA Orbital',desc:'Complete satellite catalog browser. Historical orbital data, object characteristics, launch records. CelesTrak for TLE datasets.',cat:'SATELLITE DATABASE',links:['zarya.info','celestrak.org','satflare.com']},
+  {title:'DISCOS (ESA Space Debris)',desc:'ESA\'s Database and Information System Characterizing Objects in Space. Debris environment models, fragmentation events, reentry predictions.',cat:'DEBRIS MONITORING',links:['sdup.esoc.esa.int','aerospace.org','planet4589.org']},
+  {title:'USGS/NASA Landsat Earth Observation',desc:'Freely available multispectral satellite imagery since 1972. Land change monitoring, agriculture, water resources, disaster response.',cat:'EARTH OBSERVATION OSINT',links:['earthexplorer.usgs.gov','zoom.earth','sentinel-hub.com']},
+  {title:'SpaceflightNow / NASASpaceflight',desc:'Breaking space news, launch coverage, mission profiles. NSF forum has leaked military satellite specifications and tracking data.',cat:'NEWS INTELLIGENCE',links:['spaceflightnow.com','nasaspaceflight.com','spacenews.com']},
+  {title:'Jonathan McDowell\'s Space Report',desc:'Definitive independent space activity database by Harvard astrophysicist. Satellite catalog, launch logs, reentry data. Used by industry and governments.',cat:'OPEN ANALYSIS',links:['planet4589.org','jmcdo.well.harvard.edu']},
+  {title:'AVIO / ESA GNC Reentry Monitor',desc:'ESA/EU reentry prediction service. Tracks decaying objects, predicts breakup and surviving fragments. Real-time window computations.',cat:'REENTRY TRACKING',links:['esa.int/reentry','aerospace.org/reentry','satbeams.com']},
+  {title:'NSSDC Master Catalog (NASA)',desc:'Comprehensive NASA catalog of all past/present space missions, experiments, and spacecraft. Scientific instrument databases.',cat:'MISSION ARCHIVE',links:['nssdc.gsfc.nasa.gov','space.jpl.nasa.gov','ssd.jpl.nasa.gov']},
+];
+
+// ═══════════════════════════════════════════════════
+//  LOADER
+// ═══════════════════════════════════════════════════
+const steps=[
+  {id:'lt1',msg:'LOADING ORBITAL DATABASE...'},
+  {id:'lt2',msg:'INDEXING 20 NATION PROFILES...'},
+  {id:'lt3',msg:'BUILDING ROCKET MATRIX (18 VEHICLES)...'},
+  {id:'lt4',msg:'LOADING SATELLITE INTELLIGENCE...'},
+  {id:'lt5',msg:'CONNECTING LIVE FEEDS...'},
+  {id:'lt6',msg:'INITIALIZING THREE.JS 3D RENDERER...'},
+  {id:'lt7',msg:'LOADING LEAFLET MAP ENGINE...'},
+  {id:'lt8',msg:'OSINT TOOLKIT READY...'}
+];
+let stepIdx=0;
+const fill=document.getElementById('ld-fill');
+const stat=document.getElementById('ld-status');
+function doStep(){
+  if(stepIdx>=steps.length){
+    fill.style.width='100%';
+    stat.textContent='RANASPACE READY — LAUNCHING INTERFACE...';
+    setTimeout(()=>{
+      document.getElementById('loader').style.opacity='0';
+      document.getElementById('loader').style.transition='opacity .6s';
+      setTimeout(()=>{
+        document.getElementById('loader').style.display='none';
+        document.getElementById('app').style.display='flex';
+        initAll();
+      },600);
+    },600);
+    return;
+  }
+  const s=steps[stepIdx];
+  fill.style.width=((stepIdx+1)/steps.length*100)+'%';
+  stat.textContent=s.msg;
+  document.getElementById(s.id).classList.add('ok');
+  stepIdx++;
+  setTimeout(doStep,220+Math.random()*180);
+}
+// Draw star field on loader canvas
+(function(){
+  const c=document.getElementById('loader-canvas');
+  const ctx=c.getContext('2d');
+  function resize(){c.width=window.innerWidth;c.height=window.innerHeight;}
+  resize();
+  window.addEventListener('resize',resize);
+  const stars=Array.from({length:200},()=>({x:Math.random(),y:Math.random(),r:Math.random()*1.5,o:Math.random()}));
+  function drawStars(){
+    ctx.clearRect(0,0,c.width,c.height);
+    stars.forEach(s=>{
+      ctx.beginPath();
+      ctx.arc(s.x*c.width,s.y*c.height,s.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(200,220,255,${s.o})`;
+      ctx.fill();
+      s.o+=0.005*(Math.random()>.5?1:-1);
+      s.o=Math.max(0.05,Math.min(0.9,s.o));
+    });
+    requestAnimationFrame(drawStars);
+  }
+  drawStars();
+})();
+setTimeout(doStep,600);
+
+// ═══════════════════════════════════════════════════
+//  INIT ALL
+// ═══════════════════════════════════════════════════
+function initAll(){
+  startClock();
+  buildNations();
+  buildRockets();
+  buildSatellites();
+  buildMissions();
+  buildPersons();
+  buildAgencies();
+  buildOsint();
+  buildLaunches();
+  buildQuickNations();
+  init3DGlobe();
+  init2DMap();
+  fetchSpaceNews();
+}
+
+// ═══════════════════════════════════════════════════
+//  CLOCK
+// ═══════════════════════════════════════════════════
+function startClock(){
+  function tick(){
+    const n=new Date();
+    document.getElementById('utc-clock').textContent=
+      n.getUTCHours().toString().padStart(2,'0')+':'+
+      n.getUTCMinutes().toString().padStart(2,'0')+':'+
+      n.getUTCSeconds().toString().padStart(2,'0')+' UTC';
+    document.getElementById('utc-date').textContent=
+      ['SUN','MON','TUE','WED','THU','FRI','SAT'][n.getUTCDay()]+' '+
+      n.getUTCDate().toString().padStart(2,'0')+'/'+
+      (n.getUTCMonth()+1).toString().padStart(2,'0')+'/'+n.getUTCFullYear();
+  }
+  tick();setInterval(tick,1000);
+}
+
+// ═══════════════════════════════════════════════════
+//  TAB SWITCHING
+// ═══════════════════════════════════════════════════
+function switchTab(id){
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelector(`[data-tab="${id}"]`).classList.add('active');
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+id).classList.add('active');
+  if(id==='map2d')initMap2DIfNeeded();
+}
+
+// ═══════════════════════════════════════════════════
+//  NATIONS
+// ═══════════════════════════════════════════════════
+let _nationFilter='all', _nationSearch='';
+function buildNations(){
+  const g=document.getElementById('nations-grid');
+  const keys=Object.keys(NATIONS);
+  document.getElementById('nations-count').textContent=keys.length+' NATIONS';
+  g.innerHTML='';
+  keys.filter(k=>{
+    const n=NATIONS[k];
+    if(_nationSearch && !n.name.toLowerCase().includes(_nationSearch.toLowerCase()) && !n.agency.toLowerCase().includes(_nationSearch.toLowerCase()))return false;
+    if(_nationFilter==='all')return true;
+    return n.category.includes(_nationFilter);
+  }).forEach(key=>{
+    const n=NATIONS[key];
+    const cap=n.satellites>200?95:n.satellites>50?70:n.satellites>20?45:25;
+    const el=document.createElement('div');
+    el.className='nation-card';
+    el.innerHTML=`
+      <div class="nc-top">
+        <div class="nc-flag">${n.flag}</div>
+        <div class="nc-info">
+          <div class="nc-name">${n.name}</div>
+          <div class="nc-agency">${n.agency} · Est. ${n.founded}</div>
+        </div>
+      </div>
+      <div class="nc-stats">
+        <div class="nc-stat"><div class="nc-stat-val" style="color:var(--cyan)">${n.missions}</div><div class="nc-stat-label">MISSIONS</div></div>
+        <div class="nc-stat"><div class="nc-stat-val" style="color:var(--orange)">${n.rockets}</div><div class="nc-stat-label">ROCKETS</div></div>
+        <div class="nc-stat"><div class="nc-stat-val" style="color:var(--green)">${n.satellites}</div><div class="nc-stat-label">SATELLITES</div></div>
+      </div>
+      <div class="nc-bar"><div class="nc-bar-fill" style="width:${cap}%"></div></div>
+    `;
+    el.onclick=()=>openNationModal(key);
+    g.appendChild(el);
+  });
+}
+function filterNations(v){_nationSearch=v;buildNations();}
+function filterNationType(v,el){
+  _nationFilter=v;
+  document.querySelectorAll('#view-nations .filter-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  buildNations();
+}
+function buildQuickNations(){
+  const c=document.getElementById('quick-nations');
+  Object.keys(NATIONS).forEach(k=>{
+    const n=NATIONS[k];
+    const el=document.createElement('div');
+    el.className='list-item';
+    el.innerHTML=`<div class="li-flag">${n.flag}</div><div class="li-info"><div class="li-name">${n.name}</div><div class="li-sub">${n.agency} · ${n.missions} missions</div></div>`;
+    el.onclick=()=>{switchTab('nations');setTimeout(()=>openNationModal(k),100);};
+    c.appendChild(el);
+  });
+}
+
+// ═══════════════════════════════════════════════════
+//  ROCKETS
+// ═══════════════════════════════════════════════════
+let _rocketFilter='all';
+function buildRockets(){
+  const g=document.getElementById('rockets-grid');
+  document.getElementById('rockets-count').textContent=ROCKETS.length+' VEHICLES';
+  g.innerHTML='';
+  ROCKETS.filter(r=>_rocketFilter==='all'||r.categories.includes(_rocketFilter)).forEach(r=>{
+    const hpct=Math.min(100,(parseFloat(r.height)/121*100));
+    const statusC=r.status==='active'?'active':r.status==='retired'?'retired':'dev';
+    const el=document.createElement('div');
+    el.className='rocket-card';
+    el.innerHTML=`
+      <div class="rk-top">
+        <div><div class="rk-name">${r.name}</div><div class="rk-country">${r.country} · ${r.operator}</div></div>
+        <div class="rk-status-badge ${statusC}">${r.status.toUpperCase()}</div>
+      </div>
+      <div class="rk-vis">
+        <div class="rk-bar" style="height:${hpct}%"></div>
+        <div style="flex:3;padding-left:8px;">
+          <div style="font-family:'Share Tech Mono',monospace;font-size:7px;color:var(--t4);text-transform:uppercase;margin-bottom:2px;">Height</div>
+          <div style="font-family:'Orbitron',monospace;font-size:13px;color:var(--cyan);">${r.height}</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:7px;color:var(--t4);text-transform:uppercase;margin-top:6px;margin-bottom:2px;">LEO Payload</div>
+          <div style="font-family:'Orbitron',monospace;font-size:12px;color:var(--orange);">${r.leo}</div>
+          ${r.reusable?'<div style="margin-top:6px;font-family:\'Share Tech Mono\',monospace;font-size:7px;color:var(--green);border:1px solid rgba(0,255,136,.2);display:inline-block;padding:1px 5px;">♻ REUSABLE</div>':''}
+        </div>
+      </div>
+      <div class="rk-specs">
+        <div class="rk-spec"><div class="rk-spec-label">Flights</div><div class="rk-spec-val">${r.flights}</div></div>
+        <div class="rk-spec"><div class="rk-spec-label">Success</div><div class="rk-spec-val">${r.success}</div></div>
+        <div class="rk-spec"><div class="rk-spec-label">First Launch</div><div class="rk-spec-val">${r.first}</div></div>
+        <div class="rk-spec"><div class="rk-spec-label">Mass</div><div class="rk-spec-val">${r.mass}</div></div>
+      </div>
+    `;
+    el.onclick=()=>openRocketModal(r);
+    g.appendChild(el);
+  });
+}
+function filterRockets(v,el){
+  _rocketFilter=v;
+  document.querySelectorAll('#view-rockets .filter-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  buildRockets();
+}
+
+// ═══════════════════════════════════════════════════
+//  SATELLITES
+// ═══════════════════════════════════════════════════
+let _satFilter='all';
+function buildSatellites(){
+  const g=document.getElementById('sats-grid');
+  g.innerHTML='';
+  SATELLITES_DATA.filter(s=>_satFilter==='all'||s.type===_satFilter).forEach(s=>{
+    const el=document.createElement('div');
+    el.className='sat-card';
+    el.innerHTML=`
+      <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:10px;">
+        <div class="sat-orbit-vis">
+          <div class="sat-orbit-ring r1"></div>
+          <div class="sat-orbit-ring r2"></div>
+          <div class="sat-dot"></div>
+          <div class="sat-center"></div>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-family:'Orbitron',monospace;font-size:11px;font-weight:700;color:var(--t1);">${s.name}</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:7px;color:var(--cyan);text-transform:uppercase;margin-top:2px;letter-spacing:.08em;">${s.ops}</div>
+          <div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap;">
+            <span class="sc-tag cyan">${s.type.toUpperCase()}</span>
+            <span class="sc-tag ${s.status==='active'?'green':s.status==='completed'?'cyan':'orange'}">${s.status.toUpperCase()}</span>
+            ${s.crew?`<span class="sc-tag orange">CREW: ${s.crew}</span>`:''}
+          </div>
+        </div>
+      </div>
+      <div style="font-family:'Rajdhani',sans-serif;font-size:11px;color:var(--t3);line-height:1.5;margin-bottom:10px;">${s.desc.substring(0,120)}...</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;">
+        <div style="background:var(--elevated);padding:4px 6px;"><div style="font-family:'Share Tech Mono',monospace;font-size:6px;color:var(--t4);text-transform:uppercase;">ORBIT</div><div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--t2);margin-top:1px;">${s.orbit}</div></div>
+        <div style="background:var(--elevated);padding:4px 6px;"><div style="font-family:'Share Tech Mono',monospace;font-size:6px;color:var(--t4);text-transform:uppercase;">LAUNCHED</div><div style="font-family:'Orbitron',monospace;font-size:9px;color:var(--cyan);margin-top:1px;">${s.launched}</div></div>
+      </div>
+    `;
+    el.onclick=()=>openSatModal(s);
+    g.appendChild(el);
+  });
+}
+function filterSats(v,el){
+  _satFilter=v;
+  document.querySelectorAll('#view-satellites .filter-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  buildSatellites();
+}
+
+// ═══════════════════════════════════════════════════
+//  MISSIONS
+// ═══════════════════════════════════════════════════
+const MISSIONS_DATA=[
+  {name:'Apollo 11',year:1969,nation:'USA',filterType:'crewed',status:'completed',rocket:'Saturn V',desc:"First Moon landing. Armstrong & Aldrin walked on lunar surface. 382kg samples. Watched by 600M people. Greatest human achievement.",crew:['Neil Armstrong','Buzz Aldrin','Michael Collins']},
+  {name:'Sputnik 1',year:1957,nation:'Russia',filterType:'probe',status:'completed',rocket:'Sputnik-PS',desc:"World's first satellite. Started Space Age. October 4, 1957. 57cm sphere, 83kg. 1440 orbits before re-entry."},
+  {name:'Vostok 1',year:1961,nation:'Russia',filterType:'crewed',status:'completed',rocket:'Vostok-K',desc:"Yuri Gagarin: first human in space. 108 minutes, 1 orbit at 327km altitude. April 12, 1961 — World Space Day.",crew:['Yuri Gagarin']},
+  {name:'Hubble Space Telescope',year:1990,nation:'USA',filterType:'telescope',status:'active',rocket:'Space Shuttle Discovery',desc:'35+ years. 1.5M+ observations. Confirmed dark energy, measured universe expansion acceleration. Still producing frontier science.'},
+  {name:'ISS Construction',year:1998,nation:'Multinational',filterType:'station',status:'active',rocket:'Multiple',desc:'15-nation partnership. 240+ module assembly flights. 3,000+ experiments. Continuous habitation since Nov 2000. 25+ year mission.'},
+  {name:'Mars Pathfinder',year:1996,nation:'USA',filterType:'mars',status:'completed',rocket:'Delta II 7925',desc:"First Mars rover (Sojourner). Landed July 4, 1997 in Ares Vallis. Proved rover concept. 550 images, 15 chemical analyses."},
+  {name:'Voyager 1',year:1977,nation:'USA',filterType:'probe',status:'active',rocket:'Titan IIIE',desc:'Most distant object. In interstellar space since 2012. 24 billion km from Earth. Still transmitting data 47 years later.'},
+  {name:'Chandrayaan-3',year:2023,nation:'India',filterType:'lunar',status:'completed',rocket:'LVM3 M4',desc:"India's historic south-pole Moon landing. Confirmed sulfur, iron, oxygen. First successful south-pole landing in history. 4th lunar nation."},
+  {name:"Chang'e 4",year:2018,nation:'China',filterType:'lunar',status:'active',rocket:'Long March 3B',desc:"First far-side Moon landing. Yutu-2 rover 5+ years operational. Queqiao relay satellite enables communication."},
+  {name:'James Webb ST',year:2021,nation:'USA/Europe',filterType:'telescope',status:'active',rocket:'Ariane 5 ECA+',desc:'Most powerful telescope ever. 6.5m gold mirror. Sees to Big Bang era. Analyzes exoplanet atmospheres. Revolutionizing astronomy.'},
+  {name:'Perseverance Rover',year:2020,nation:'USA',filterType:'mars',status:'active',rocket:'Atlas V 541',desc:"Searching Jezero Crater for biosignatures. Ingenuity helicopter: first Mars aircraft. Caching samples for future return."},
+  {name:'DART Planetary Defense',year:2021,nation:'USA',filterType:'probe',status:'completed',rocket:'Falcon 9',desc:"World's first planetary defense test. Changed asteroid Dimorphos' orbit by 33 min. Proved Earth can be protected."},
+  {name:'Tiangong CSS',year:2021,nation:'China',filterType:'station',status:'active',rocket:'Long March 5B',desc:"China's permanent modular space station. T-shape: Tianhe + Wentian + Mengtian. 3-person crew. Independent from ISS."},
+  {name:'Artemis I',year:2022,nation:'USA',filterType:'lunar',status:'completed',rocket:'SLS Block 1',desc:'26-day uncrewed Moon-orbit test. SLS + Orion capsule. Perfect rehearsal. Paved way for Artemis II crewed lunar flyby.'},
+  {name:'Mangalyaan (MOM)',year:2013,nation:'India',filterType:'mars',status:'completed',rocket:'PSLV-C25',desc:"India's Mars mission succeeded on first attempt. $74M — cheapest Mars mission ever. 2 years of Mars imaging."},
+  {name:'Hope Mars Mission',year:2020,nation:'UAE',filterType:'mars',status:'active',rocket:'H-IIA 202',desc:"First Arab spacecraft to Mars. First complete global Martian atmospheric climate dataset. UAE's greatest space achievement."},
+  {name:'Rosetta/Philae',year:2004,nation:'Europe',filterType:'probe',status:'completed',rocket:'Ariane 5G+',desc:"First comet orbit and landing. 10-year, 6.4B km journey to comet 67P. Philae lander touched down Nov 2014."},
+  {name:'New Horizons',year:2006,nation:'USA',filterType:'probe',status:'active',rocket:'Atlas V 551',desc:"Only spacecraft to visit Pluto. Flew by July 2015. Now in Kuiper Belt. Returned stunning geology of Pluto."},
+];
+let _missionFilter='all';
+function buildMissions(){
+  const g=document.getElementById('missions-grid');
+  g.innerHTML='';
+  MISSIONS_DATA.filter(m=>_missionFilter==='all'||m.filterType===_missionFilter).forEach(m=>{
+    const statusC=m.status==='active'?'green':m.status==='completed'?'cyan':m.status==='planned'?'purple':'orange';
+    const typeIcon={crewed:'👨‍🚀',lunar:'🌙',mars:'🔴',telescope:'🔭',station:'🛸',probe:'🚀'}[m.filterType]||'🌌';
+    const el=document.createElement('div');
+    el.className='space-card';
+    el.innerHTML=`
+      <div class="sc-header">
+        <div class="sc-icon">${typeIcon}</div>
+        <div class="sc-title-wrap">
+          <div class="sc-title">${m.name}</div>
+          <div class="sc-agency">${m.nation} · ${m.year} · ${m.rocket}</div>
+        </div>
+      </div>
+      <div class="sc-body">${m.desc}</div>
+      <div class="sc-tags">
+        <span class="sc-tag ${statusC}">${m.status.toUpperCase()}</span>
+        <span class="sc-tag cyan">${m.filterType.toUpperCase()}</span>
+        ${m.crew?`<span class="sc-tag orange">CREWED</span>`:''}
+      </div>
+    `;
+    el.onclick=()=>openMissionModal(m);
+    g.appendChild(el);
+  });
+}
+function filterMissions(v,el){
+  _missionFilter=v;
+  document.querySelectorAll('#view-missions .filter-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  buildMissions();
+}
+
+// ═══════════════════════════════════════════════════
+//  PERSONS
+// ═══════════════════════════════════════════════════
+function buildPersons(){
+  const g=document.getElementById('persons-grid');
+  KEY_PERSONS.forEach(p=>{
+    const el=document.createElement('div');
+    el.className='person-card';
+    el.innerHTML=`
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <div class="pc-avatar" style="background:linear-gradient(135deg,${p.color},rgba(0,0,0,.5));">${p.initials}</div>
+        <div>
+          <div class="pc-name">${p.name}</div>
+          <div class="pc-role">${p.role}</div>
+          <div class="pc-nation">🌐 ${p.nation} · ${p.born}</div>
+        </div>
+      </div>
+      <div class="pc-achievement">${p.achievement.substring(0,150)}${p.achievement.length>150?'...':''}</div>
+    `;
+    g.appendChild(el);
+  });
+}
+
+// ═══════════════════════════════════════════════════
+//  AGENCIES
+// ═══════════════════════════════════════════════════
+let _agencyFilter='all';
+const GOVT_AGENCIES=[
+  {name:'NASA',fullName:'National Aeronautics and Space Administration',type:'government',country:'USA 🇺🇸',founded:1958,logo:'🚀',focus:'Human spaceflight, science, exploration',notable:"World's most iconic space agency. Apollo, Hubble, ISS, Artemis, Mars rovers. Budget $25.4B.",rockets:['SLS','contracted']},
+  {name:'Roscosmos',fullName:'State Space Corporation',type:'government',country:'Russia 🇷🇺',founded:1992,logo:'⭐',focus:'Soyuz crew, ISS, Angara, GLONASS',notable:"World's first space agency heritage (CCCP). Launched Sputnik, Gagarin, Mir. Soyuz most-flown crew vehicle.",rockets:['Soyuz-2','Proton-M','Angara']},
+  {name:'CNSA',fullName:'China National Space Administration',type:'government',country:'China 🇨🇳',founded:1993,logo:'🐉',focus:'Human spaceflight, Lunar, Mars, Space station',notable:"3rd nation for human spaceflight (2003). Tiangong CSS, Chang'e lunar, Tianwen-1 Mars.",rockets:['Long March 5','Long March 2F']},
+  {name:'ISRO',fullName:'Indian Space Research Organisation',type:'government',country:'India 🇮🇳',founded:1969,logo:'🛕',focus:'Applications, Lunar, Mars, Crewed',notable:"Cheapest Mars mission ($74M). First south-pole Moon landing. 104-satellite record. Gaganyaan crewed mission.",rockets:['PSLV','LVM3','SSLV']},
+  {name:'ESA',fullName:'European Space Agency',type:'government',country:'Europe 🇪🇺',founded:1975,logo:'⭐',focus:'Science, EO, Navigation (Galileo)',notable:"22 member states. Ariane rockets, Galileo GPS, Copernicus EO, BepiColombo, Euclid, JUICE.",rockets:['Ariane 6','Vega-C']},
+  {name:'JAXA',fullName:'Japan Aerospace Exploration Agency',type:'government',country:'Japan 🇯🇵',founded:2003,logo:'🗾',focus:'Science, EO, Deep space, Human',notable:"Hayabusa asteroid samples, SLIM pinpoint Moon landing, H3 rocket, ISS Kibo module.",rockets:['H3','Epsilon']},
+  {name:'UAESA',fullName:'UAE Space Agency / MBRSC',type:'government',country:'UAE 🇦🇪',founded:2014,logo:'🕌',focus:'Mars, Lunar, Earth Observation',notable:"Hope Mars mission in 6 years from scratch. Arab world's fastest-growing space program.",rockets:['Commercial']},
+  {name:'KARI',fullName:'Korea Aerospace Research Institute',type:'government',country:'S. Korea 🇰🇷',founded:1989,logo:'🎯',focus:'Earth observation, Navigation, Lunar',notable:"KSLV-II Nuri first domestic orbital success. Danuri Moon orbiter. KPS regional navigation.",rockets:['KSLV-II Nuri']},
+];
+function buildAgencies(){
+  const g=document.getElementById('agencies-grid');
+  g.innerHTML='';
+  const all=[...GOVT_AGENCIES,...PRIVATE_AGENCIES];
+  all.filter(a=>_agencyFilter==='all'||a.type===_agencyFilter).forEach(a=>{
+    const el=document.createElement('div');
+    el.className='agency-card';
+    el.innerHTML=`
+      <div class="ac-header">
+        <div class="ac-icon">${a.logo}</div>
+        <div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div class="ac-name">${a.name}</div>
+            <span class="sc-tag ${a.type==='private'?'orange':'cyan'}">${a.type.toUpperCase()}</span>
+          </div>
+          <div class="ac-full">${a.country} · Est. ${a.founded}</div>
+        </div>
+      </div>
+      <div class="ac-desc">${a.notable}</div>
+      <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;">${a.focus}</div>
+    `;
+    el.onclick=()=>openAgencyModal(a.name);
+    g.appendChild(el);
+  });
+}
+function filterAgencies(v,el){
+  _agencyFilter=v;
+  document.querySelectorAll('#view-agencies .filter-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  buildAgencies();
+}
+
+// ═══════════════════════════════════════════════════
+//  OSINT
+// ═══════════════════════════════════════════════════
+function buildOsint(){
+  const c=document.getElementById('osint-container');
+  OSINT_TOOLS.forEach(t=>{
+    const el=document.createElement('div');
+    el.className='osint-tool';
+    el.innerHTML=`
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <span style="font-family:'Share Tech Mono',monospace;font-size:7px;letter-spacing:.1em;padding:1px 6px;background:rgba(0,212,255,.08);color:var(--cyan);border:1px solid rgba(0,212,255,.15);text-transform:uppercase;">${t.cat}</span>
+      </div>
+      <div class="ot-title">${t.title}</div>
+      <div class="ot-desc">${t.desc}</div>
+      <div class="ot-links">${t.links.map(l=>`<a class="ot-link" href="https://${l}" target="_blank">${l}</a>`).join('')}</div>
+    `;
+    c.appendChild(el);
+  });
+}
+
+// ═══════════════════════════════════════════════════
+//  LAUNCHES
+// ═══════════════════════════════════════════════════
+const UPCOMING_LAUNCHES=[
+  {name:'Starship IFT-8',rocket:'Starship/Super Heavy',pad:'Starbase, Texas, USA',date:'2025-Q1',agency:'SpaceX',status:'planned',desc:'8th integrated flight test. Aiming for full reuse demonstration.'},
+  {name:'Artemis II',rocket:'SLS Block 1',pad:'LC-39B, KSC, Florida',date:'2025',agency:'NASA',status:'planned',desc:'First crewed SLS mission. 4 astronauts on 10-day lunar flyby.'},
+  {name:'Gaganyaan G1',rocket:'LVM3',pad:'SDSC SHAR, Sriharikota',date:'2025',agency:'ISRO',status:'planned',desc:"India's first crewed orbital flight. 2 astronauts, 3-day LEO mission."},
+  {name:'Chang\'e 7',rocket:'Long March 5',pad:'Wenchang Space Center',date:'2026',agency:'CNSA',status:'planned',desc:'Lunar south pole mission. Lander, rover, flying detector for permanently shadowed craters.'},
+  {name:'Europa Clipper',rocket:'Falcon Heavy',pad:'LC-39A, KSC',date:'En route 2030',agency:'NASA',status:'active',desc:'En route to Jupiter\'s moon Europa. 50 flybys to study subsurface ocean habitability.'},
+  {name:'Axiom Station Module 1',rocket:'Falcon Heavy',pad:'LC-39A, KSC',date:'2026',agency:'Axiom/NASA',status:'planned',desc:'First private commercial space station module to ISS.'},
+  {name:'Lunar Gateway HALO',rocket:'Falcon Heavy',pad:'LC-39A, KSC',date:'2025',agency:'NASA/Maxar',status:'planned',desc:'Habitation and Logistics Outpost — first lunar orbital station module.'},
+  {name:'Euclid Follow-on (PLATO)',rocket:'Ariane 6',pad:'CSG, Kourou',date:'2026',agency:'ESA',status:'planned',desc:'Searching for Earth-like exoplanets around sun-like stars. 1M+ stars.'},
+  {name:'MMX (Martian Moon eXploration)',rocket:'H3-24',pad:'Tanegashima',date:'2026',agency:'JAXA',status:'planned',desc:'Sample return from Mars moon Phobos. Determine if Phobos is captured asteroid.'},
+  {name:'Dragonfly',rocket:'Falcon Heavy',pad:'LC-39A, KSC',date:'2028',agency:'NASA/APL',status:'planned',desc:'Rotorcraft lander to Titan. Fly across Titan surface exploring prebiotic chemistry.'},
+];
+function buildLaunches(){
+  const c=document.getElementById('launches-container');
+  const sb=document.getElementById('sidebar-launches');
+  sb.innerHTML='';
+  UPCOMING_LAUNCHES.forEach((l,i)=>{
+    const el=document.createElement('div');
+    el.className='launch-item';
+    const statusC=l.status==='active'?'green':'purple';
+    el.innerHTML=`
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+        <span class="sc-tag ${statusC}">${l.status.toUpperCase()}</span>
+        <span class="li-time">${l.date}</span>
+        <span style="margin-left:auto;font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--t3);">${l.agency}</span>
+      </div>
+      <div class="li-mission">${l.name}</div>
+      <div class="li-rocket">🔥 ${l.rocket}</div>
+      <div class="li-pad">📍 ${l.pad}</div>
+      <div style="font-family:'Rajdhani',sans-serif;font-size:11px;color:var(--t3);margin-top:4px;">${l.desc}</div>
+    `;
+    c.appendChild(el);
+    if(i<5){
+      const s=document.createElement('div');
+      s.className='launch-item';
+      s.innerHTML=`<div class="li-time">${l.date}</div><div class="li-mission" style="font-size:11px;">${l.name}</div><div class="li-rocket" style="font-size:8px;">🔥 ${l.rocket}</div>`;
+      sb.appendChild(s);
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════
+//  LIVE NEWS
+// ═══════════════════════════════════════════════════
+function fetchSpaceNews(){
+  const c=document.getElementById('news-container');
+  const st=document.getElementById('news-status');
+  fetch('https://api.spaceflightnewsapi.net/v4/articles/?limit=30&ordering=-published_at')
+    .then(r=>r.json())
+    .then(data=>{
+      c.innerHTML='';
+      st.innerHTML='<span class="live-dot"></span>LIVE — '+data.results.length+' ARTICLES';
+      data.results.forEach(a=>{
+        const d=new Date(a.published_at);
+        const el=document.createElement('div');
+        el.className='news-item';
+        el.innerHTML=`
+          <div class="ni-header">
+            <span class="ni-cat">${a.news_site||'SPACE NEWS'}</span>
+            <span class="ni-date">${d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}</span>
+          </div>
+          <div class="ni-title">${a.title}</div>
+          ${a.summary?`<div class="ni-summary">${a.summary.substring(0,180)}${a.summary.length>180?'...':''}</div>`:''}
+        `;
+        el.onclick=()=>window.open(a.url,'_blank');
+        c.appendChild(el);
+      });
+    })
+    .catch(()=>{
+      st.innerHTML='<span class="live-dot" style="background:var(--orange)"></span>CACHED DATA';
+      // Fallback static news
+      const fallback=[
+        {title:"NASA's Artemis II crew completes critical simulation at Johnson Space Center",site:'NASA',date:'2025-01-15',summary:"The four-person Artemis II crew completed a full simulation of the lunar flyby mission profile at JSC's Mission Control."},
+        {title:'SpaceX launches 23 more Starlink satellites on booster completing 20th flight',site:'SpaceX/NASASpaceflight',date:'2025-01-12',summary:"Falcon 9 booster B1078 landed for the 20th time at LZ-1, a new reuse record for SpaceX's workhorse rocket."},
+        {title:"China's Shenzhou-19 crew sets new EVA duration record on Tiangong station",site:'CNSA/XinHua',date:'2025-01-10',summary:'The Shenzhou-19 crew completed a 9-hour 06-minute spacewalk, the longest Chinese EVA on record.'},
+        {title:'James Webb reveals carbon dioxide in atmosphere of potentially habitable exoplanet',site:'NASA/ESA/STScI',date:'2025-01-08',summary:"JWST's NIRSpec detected CO₂ absorption in K2-18b's atmosphere, a sub-Neptune in the habitable zone."},
+        {title:"India's Gaganyaan TV-D1 abort test declared complete success by ISRO",site:'ISRO',date:'2025-01-05',summary:'The test vehicle separation and crew module parachute landing in Bay of Bengal confirmed all systems nominal.'},
+        {title:'ESA Euclid space telescope releases first dark matter map of the universe',site:'ESA',date:'2024-12-20',summary:'Euclid has created the most detailed 3D map of dark matter, covering 1/300th of sky in first data release.'},
+        {title:'Rocket Lab\'s Electron completes 50th successful launch from Māhia Peninsula',site:'RocketLab',date:'2024-12-18',summary:"Rocket Lab's Electron rocket reached its 50th successful launch milestone, cementing its role as the 2nd most active orbital rocket."},
+      ];
+      c.innerHTML='';
+      fallback.forEach(a=>{
+        const el=document.createElement('div');el.className='news-item';
+        el.innerHTML=`<div class="ni-header"><span class="ni-cat">${a.site}</span><span class="ni-date">${a.date}</span></div><div class="ni-title">${a.title}</div><div class="ni-summary">${a.summary}</div>`;
+        c.appendChild(el);
+      });
+    });
+}
+
+// ═══════════════════════════════════════════════════
+//  3D GLOBE (Three.js)
+// ═══════════════════════════════════════════════════
+let globeScene,globeCamera,globeRenderer,globeEarth,globeGroup,globeAnimId;
+let globeAutoRotate=true, globeLayers={sat:true,orbit:true,debris:false,station:true};
+function init3DGlobe(){
+  const canvas=document.getElementById('globe3d-canvas');
+  globeScene=new THREE.Scene();
+  globeCamera=new THREE.PerspectiveCamera(45,canvas.clientWidth/canvas.clientHeight,0.1,1000);
+  globeCamera.position.set(0,0,2.8);
+  globeRenderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
+  globeRenderer.setPixelRatio(window.devicePixelRatio||1);
+  globeRenderer.setSize(canvas.clientWidth,canvas.clientHeight);
+  globeRenderer.setClearColor(0x000000,0);
+
+  // Lighting
+  const amb=new THREE.AmbientLight(0x223344,0.8);
+  globeScene.add(amb);
+  const sun=new THREE.DirectionalLight(0xffeedd,2.5);
+  sun.position.set(5,3,5);
+  globeScene.add(sun);
+
+  globeGroup=new THREE.Group();
+  globeScene.add(globeGroup);
+
+  // Earth sphere
+  const geo=new THREE.SphereGeometry(1,64,64);
+  // Create gradient texture procedurally
+  const texCanvas=document.createElement('canvas');
+  texCanvas.width=512;texCanvas.height=256;
+  const tctx=texCanvas.getContext('2d');
+  const grad=tctx.createLinearGradient(0,0,512,256);
+  grad.addColorStop(0,'#0a1a3a');
+  grad.addColorStop(0.3,'#0d2a50');
+  grad.addColorStop(0.5,'#0f3060');
+  grad.addColorStop(0.7,'#1a4a30');
+  grad.addColorStop(1,'#0a1a3a');
+  tctx.fillStyle=grad;tctx.fillRect(0,0,512,256);
+  // Draw landmasses (approximate)
+  tctx.fillStyle='rgba(20,70,40,0.7)';
+  // North America
+  tctx.beginPath();tctx.ellipse(128,100,40,35,0.3,0,Math.PI*2);tctx.fill();
+  // South America
+  tctx.beginPath();tctx.ellipse(148,160,22,40,-0.2,0,Math.PI*2);tctx.fill();
+  // Europe
+  tctx.beginPath();tctx.ellipse(240,90,18,18,0,0,Math.PI*2);tctx.fill();
+  // Africa
+  tctx.beginPath();tctx.ellipse(248,145,22,38,0.1,0,Math.PI*2);tctx.fill();
+  // Asia
+  tctx.beginPath();tctx.ellipse(340,100,70,35,-0.1,0,Math.PI*2);tctx.fill();
+  // Australia
+  tctx.beginPath();tctx.ellipse(390,170,28,18,0.2,0,Math.PI*2);tctx.fill();
+  // Grid lines
+  tctx.strokeStyle='rgba(0,212,255,0.08)';tctx.lineWidth=0.5;
+  for(let i=0;i<512;i+=512/12){tctx.beginPath();tctx.moveTo(i,0);tctx.lineTo(i,256);tctx.stroke();}
+  for(let i=0;i<256;i+=256/6){tctx.beginPath();tctx.moveTo(0,i);tctx.lineTo(512,i);tctx.stroke();}
+  const tex=new THREE.CanvasTexture(texCanvas);
+  const mat=new THREE.MeshPhongMaterial({map:tex,specular:new THREE.Color(0x224488),shininess:20});
+  globeEarth=new THREE.Mesh(geo,mat);
+  globeGroup.add(globeEarth);
+
+  // Atmosphere glow
+  const atmGeo=new THREE.SphereGeometry(1.04,64,64);
+  const atmMat=new THREE.MeshPhongMaterial({color:0x0066cc,transparent:true,opacity:0.12,side:THREE.FrontSide});
+  globeGroup.add(new THREE.Mesh(atmGeo,atmMat));
+
+  // Satellite dots
+  addSatelliteDots();
+  // Orbit rings
+  addOrbitRings();
+  // Station markers
+  addStationMarkers();
+
+  // Stars background
+  const starsGeo=new THREE.BufferGeometry();
+  const starsPos=new Float32Array(3000);
+  for(let i=0;i<3000;i+=3){
+    const theta=Math.random()*Math.PI*2;
+    const phi=Math.acos(2*Math.random()-1);
+    const r=40+Math.random()*60;
+    starsPos[i]=r*Math.sin(phi)*Math.cos(theta);
+    starsPos[i+1]=r*Math.sin(phi)*Math.sin(theta);
+    starsPos[i+2]=r*Math.cos(phi);
+  }
+  starsGeo.setAttribute('position',new THREE.BufferAttribute(starsPos,3));
+  const starsMat=new THREE.PointsMaterial({color:0xffffff,size:0.15,sizeAttenuation:true});
+  globeScene.add(new THREE.Points(starsGeo,starsMat));
+
+  // Mouse drag
+  let isDragging=false,prevMouse={x:0,y:0};
+  canvas.addEventListener('mousedown',e=>{isDragging=true;prevMouse={x:e.clientX,y:e.clientY};});
+  canvas.addEventListener('mousemove',e=>{
+    if(!isDragging)return;
+    const dx=e.clientX-prevMouse.x, dy=e.clientY-prevMouse.y;
+    globeGroup.rotation.y+=dx*0.005;
+    globeGroup.rotation.x+=dy*0.005;
+    prevMouse={x:e.clientX,y:e.clientY};
+  });
+  canvas.addEventListener('mouseup',()=>isDragging=false);
+  canvas.addEventListener('wheel',e=>{
+    globeCamera.position.z=Math.max(1.5,Math.min(6,globeCamera.position.z+e.deltaY*0.002));
+  });
+
+  window.addEventListener('resize',()=>{
+    const w=canvas.clientWidth,h=canvas.clientHeight;
+    globeCamera.aspect=w/h;globeCamera.updateProjectionMatrix();
+    globeRenderer.setSize(w,h);
+  });
+  animateGlobe();
+}
+function addSatelliteDots(){
+  const satsGeo=new THREE.BufferGeometry();
+  const pos=[];
+  for(let i=0;i<120;i++){
+    const r=1.05+Math.random()*0.15;
+    const theta=Math.random()*Math.PI*2;
+    const phi=Math.acos(2*Math.random()-1);
+    pos.push(r*Math.sin(phi)*Math.cos(theta),r*Math.sin(phi)*Math.sin(theta),r*Math.cos(phi));
+  }
+  satsGeo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(pos),3));
+  const satsMat=new THREE.PointsMaterial({color:0x00d4ff,size:0.012,sizeAttenuation:true});
+  const sats=new THREE.Points(satsGeo,satsMat);
+  sats.name='satellites';
+  globeGroup.add(sats);
+}
+function addOrbitRings(){
+  const orbits=[
+    {r:1.08,color:0x00d4ff,opacity:0.3},
+    {r:1.15,color:0xff6b35,opacity:0.2},
+    {r:1.25,color:0x00ff88,opacity:0.15},
+  ];
+  orbits.forEach(o=>{
+    const g=new THREE.TorusGeometry(o.r,0.002,8,120);
+    const m=new THREE.MeshBasicMaterial({color:o.color,transparent:true,opacity:o.opacity});
+    const ring=new THREE.Mesh(g,m);
+    ring.rotation.x=Math.random()*0.5;
+    ring.rotation.y=Math.random()*0.5;
+    ring.name='orbit';
+    globeGroup.add(ring);
+  });
+}
+function addStationMarkers(){
+  // ISS marker
+  const g=new THREE.SphereGeometry(0.015,8,8);
+  const m=new THREE.MeshBasicMaterial({color:0xff6b35});
+  const iss=new THREE.Mesh(g,m);
+  iss.position.set(1.1,0,0);
+  iss.name='station';
+  globeGroup.add(iss);
+  // Tiangong
+  const g2=new THREE.SphereGeometry(0.012,8,8);
+  const m2=new THREE.MeshBasicMaterial({color:0xff8800});
+  const tg=new THREE.Mesh(g2,m2);
+  tg.position.set(-0.8,0.8,0);
+  tg.name='station';
+  globeGroup.add(tg);
+}
+function animateGlobe(){
+  globeAnimId=requestAnimationFrame(animateGlobe);
+  if(globeAutoRotate){globeGroup.rotation.y+=0.002;}
+  // Animate orbit rings
+  globeGroup.children.forEach(c=>{
+    if(c.name==='orbit')c.rotation.z+=0.001;
+    if(c.name==='station'){
+      const t=Date.now()*0.001;
+      c.position.x=1.12*Math.cos(t);
+      c.position.z=1.12*Math.sin(t);
+    }
+  });
+  globeRenderer.render(globeScene,globeCamera);
+}
+function globeOrbitToggle(btn){
+  globeAutoRotate=!globeAutoRotate;
+  btn.classList.toggle('active',globeAutoRotate);
+}
+function globeLayerToggle(layer){
+  globeLayers[layer]=!globeLayers[layer];
+  if(globeGroup){
+    globeGroup.children.forEach(c=>{
+      if(c.name===layer||(layer==='sat'&&c.name==='satellites')){
+        c.visible=globeLayers[layer];
+      }
+    });
+  }
+}
+
+// ═══════════════════════════════════════════════════
+//  2D MAP (Leaflet)
+// ═══════════════════════════════════════════════════
+let map2dInited=false;
+function init2DMap(){
+  if(map2dInited)return;
+  map2dInited=true;
+  const m=L.map('map2d-container',{zoomControl:true,attributionControl:false}).setView([20,0],2);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
+    attribution:'CartoDB',maxZoom:18,subdomains:'abcd'
+  }).addTo(m);
+  // Launch sites
+  const sites=[
+    {lat:28.524,lng:-80.65,name:'Kennedy Space Center',country:'USA 🇺🇸',rockets:['Falcon 9','Falcon Heavy','SLS']},
+    {lat:28.608,lng:-80.604,name:'Cape Canaveral SFS',country:'USA 🇺🇸',rockets:['Atlas V','Falcon 9']},
+    {lat:45.965,lng:63.305,name:'Baikonur Cosmodrome',country:'Russia 🇷🇺',rockets:['Soyuz-2','Proton-M']},
+    {lat:62.964,lng:40.697,name:'Plesetsk Cosmodrome',country:'Russia 🇷🇺',rockets:['Soyuz-2','Angara']},
+    {lat:19.614,lng:110.951,name:'Wenchang Space Center',country:'China 🇨🇳',rockets:['Long March 5','Long March 7']},
+    {lat:28.246,lng:102.026,name:'Xichang Launch Center',country:'China 🇨🇳',rockets:['Long March 3']},
+    {lat:40.958,lng:100.299,name:'Jiuquan Space Center',country:'China 🇨🇳',rockets:['Long March 2F']},
+    {lat:13.711,lng:80.23,name:'Satish Dhawan SC',country:'India 🇮🇳',rockets:['PSLV','LVM3','SSLV']},
+    {lat:5.236,lng:-52.769,name:'Guiana Space Centre (CSG)',country:'France/ESA 🇫🇷',rockets:['Ariane 6','Vega']},
+    {lat:30.392,lng:130.97,name:'Tanegashima Space Center',country:'Japan 🇯🇵',rockets:['H3','H-IIA']},
+    {lat:37.7594,lng:127.5562,name:'Naro Space Center',country:'S. Korea 🇰🇷',rockets:['KSLV-II Nuri']},
+    {lat:-39.262,lng:177.865,name:'Māhia Peninsula',country:'New Zealand 🇳🇿',rockets:['Electron']},
+    {lat:28.445,lng:-16.777,name:'Canary Islands (future)',country:'Spain 🇪🇸',rockets:['Test facility']},
+    {lat:30.947,lng:121.2,name:'Shanghai Spaceport',country:'China 🇨🇳',rockets:['Kuaizhou','Jielong']},
+    {lat:27.207,lng:35.636,name:'King Abdulaziz SC',country:'Saudi Arabia 🇸🇦',rockets:['Testing']},
+    {lat:32.12,lng:34.89,name:'Palmachim AB',country:'Israel 🇮🇱',rockets:['Shavit']},
+    {lat:35.746,lng:53.921,name:'Semnan Space Center',country:'Iran 🇮🇷',rockets:['Qased','Simorgh']},
+  ];
+  const icon=L.divIcon({
+    html:`<div style="width:8px;height:8px;background:#00d4ff;border-radius:50%;box-shadow:0 0 8px #00d4ff;border:1px solid rgba(0,212,255,.5);"></div>`,
+    iconSize:[8,8],iconAnchor:[4,4],className:''
+  });
+  sites.forEach(s=>{
+    const popup=`<div style="background:#040c18;border:1px solid rgba(0,212,255,.2);padding:10px;font-family:'Share Tech Mono',monospace;color:#c8d8e8;min-width:160px;">
+      <div style="color:#00d4ff;font-size:10px;letter-spacing:.1em;margin-bottom:4px;">${s.name}</div>
+      <div style="font-size:9px;color:#7a98b8;margin-bottom:4px;">${s.country}</div>
+      <div style="font-size:8px;color:#3a5870;">🔥 ${s.rockets.join(' · ')}</div>
+    </div>`;
+    L.marker([s.lat,s.lng],{icon}).addTo(m).bindPopup(popup,{className:'space-popup'});
+  });
+  // Nation labels (approximate centroids)
+  const nations=[
+    {lat:38,lng:-96,name:'NASA'},{lat:55,lng:82,name:'Roscosmos'},{lat:35,lng:105,name:'CNSA'},
+    {lat:22,lng:78,name:'ISRO'},{lat:50,lng:10,name:'ESA'},{lat:36,lng:138,name:'JAXA'},
+    {lat:24,lng:54,name:'UAESA'},{lat:37,lng:128,name:'KARI'},{lat:31,lng:35,name:'ISA'}
+  ];
+  nations.forEach(n=>{
+    L.marker([n.lat,n.lng],{icon:L.divIcon({
+      html:`<div style="font-family:'Orbitron',monospace;font-size:8px;color:rgba(0,212,255,.7);white-space:nowrap;text-shadow:0 0 6px rgba(0,212,255,.5);letter-spacing:.05em;">${n.name}</div>`,
+      iconSize:[60,14],iconAnchor:[30,7],className:''
+    })}).addTo(m);
+  });
+}
+function initMap2DIfNeeded(){setTimeout(()=>{if(!map2dInited)init2DMap();},100);}
+
+// ═══════════════════════════════════════════════════
+//  MODALS
+// ═══════════════════════════════════════════════════
+function openModal(){document.getElementById('modal-overlay').classList.add('open');}
+function closeModal(){document.getElementById('modal-overlay').classList.remove('open');}
+function closeModalOverlay(e){if(e.target===document.getElementById('modal-overlay'))closeModal();}
+
+function openNationModal(key){
+  const n=NATIONS[key];
+  document.getElementById('modal-icon').textContent=n.flag;
+  document.getElementById('modal-title').textContent=n.name+' Space Program';
+  document.getElementById('modal-sub').textContent=n.agency+' — '+n.agencyFull||n.agency;
+  document.getElementById('modal-body').innerHTML=`
+    <div class="modal-section">
+      <div class="modal-section-title">AGENCY OVERVIEW</div>
+      <div class="modal-grid modal-grid cols3">
+        <div class="modal-field"><div class="mf-label">Agency</div><div class="mf-value">${n.agency}</div></div>
+        <div class="modal-field"><div class="mf-label">Founded</div><div class="mf-value">${n.founded}</div></div>
+        <div class="modal-field"><div class="mf-label">Budget</div><div class="mf-value">${n.budget}</div></div>
+        <div class="modal-field"><div class="mf-label">Headquarters</div><div class="mf-value">${n.hq}</div></div>
+        <div class="modal-field"><div class="mf-label">Director</div><div class="mf-value">${n.director||'—'}</div></div>
+        <div class="modal-field"><div class="mf-label">Satellites</div><div class="mf-value" style="color:var(--cyan)">${n.satellites}+</div></div>
+      </div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">SPACE MISSIONS (${n.missionList.length})</div>
+      ${n.missionList.map(m=>`
+        <div class="mission-row">
+          <div class="mr-year">${m.year}</div>
+          <div class="mr-info">
+            <div class="mr-name">${m.name}</div>
+            <div class="mr-type">${m.type} · 🔥 ${m.rocket}</div>
+            <div style="font-family:'Rajdhani',sans-serif;font-size:11px;color:var(--t3);margin-top:3px;">${m.desc}</div>
+            ${m.crew?`<div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--orange);margin-top:2px;">👨‍🚀 ${m.crew.join(' · ')}</div>`:''}
+          </div>
+          <div class="mr-status ${m.status}">${m.status.toUpperCase()}</div>
+        </div>
+      `).join('')}
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">LAUNCH VEHICLES (${n.rocketList.length})</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        ${n.rocketList.map(r=>`<span class="sc-tag cyan">🔥 ${r}</span>`).join('')}
+      </div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">KEY PERSONS</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        ${(n.persons||[]).map(p=>`<span class="sc-tag orange">👤 ${p}</span>`).join('')}
+      </div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">NOTABLE SATELLITES</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        ${(n.satList||[]).map(s=>`<span class="sc-tag purple">📡 ${s}</span>`).join('')}
+      </div>
+    </div>
+  `;
+  openModal();
+}
+
+function openRocketModal(r){
+  document.getElementById('modal-icon').textContent='🔥';
+  document.getElementById('modal-title').textContent=r.name;
+  document.getElementById('modal-sub').textContent=r.country+' · '+r.operator+' · '+r.status.toUpperCase();
+  document.getElementById('modal-body').innerHTML=`
+    <div class="modal-section">
+      <div class="modal-section-title">VEHICLE SPECIFICATIONS</div>
+      <div class="modal-grid cols3">
+        <div class="modal-field"><div class="mf-label">Height</div><div class="mf-value" style="color:var(--cyan)">${r.height}</div></div>
+        <div class="modal-field"><div class="mf-label">Mass at Liftoff</div><div class="mf-value">${r.mass}</div></div>
+        <div class="modal-field"><div class="mf-label">LEO Payload</div><div class="mf-value" style="color:var(--orange)">${r.leo}</div></div>
+        <div class="modal-field"><div class="mf-label">GTO Payload</div><div class="mf-value">${r.gto||'N/A'}</div></div>
+        <div class="modal-field"><div class="mf-label">Propellant</div><div class="mf-value">${r.fuel}</div></div>
+        <div class="modal-field"><div class="mf-label">Reusable</div><div class="mf-value" style="color:${r.reusable?'var(--green)':'var(--t3)'};">${r.reusable?'YES — REUSABLE':'NO'}</div></div>
+        <div class="modal-field"><div class="mf-label">Engines</div><div class="mf-value">${r.engines}</div></div>
+        <div class="modal-field"><div class="mf-label">Flights</div><div class="mf-value" style="color:var(--cyan)">${r.flights}</div></div>
+        <div class="modal-field"><div class="mf-label">Success Rate</div><div class="mf-value" style="color:var(--green)">${r.success}</div></div>
+        <div class="modal-field"><div class="mf-label">First Launch</div><div class="mf-value">${r.first}</div></div>
+        <div class="modal-field"><div class="mf-label">Status</div><div class="mf-value" style="color:${r.status==='active'?'var(--green)':r.status==='retired'?'var(--t3)':'var(--orange)'}">${r.status.toUpperCase()}</div></div>
+        <div class="modal-field"><div class="mf-label">Operator</div><div class="mf-value">${r.operator}</div></div>
+      </div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">NOTABLE FACTS</div>
+      <div style="font-family:'Rajdhani',sans-serif;font-size:13px;color:var(--t2);line-height:1.7;background:var(--panel);padding:14px;border-left:2px solid var(--cyan);">${r.notable}</div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">CATEGORIES</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        ${r.categories.map(c=>`<span class="sc-tag cyan">${c.toUpperCase()}</span>`).join('')}
+      </div>
+    </div>
+  `;
+  openModal();
+}
+
+function openSatModal(s){
+  document.getElementById('modal-icon').textContent='📡';
+  document.getElementById('modal-title').textContent=s.name;
+  document.getElementById('modal-sub').textContent=s.ops+' · '+s.type.toUpperCase();
+  document.getElementById('modal-body').innerHTML=`
+    <div class="modal-section">
+      <div class="modal-section-title">ORBITAL PARAMETERS</div>
+      <div class="modal-grid cols3">
+        <div class="modal-field"><div class="mf-label">Orbit</div><div class="mf-value" style="color:var(--cyan)">${s.orbit}</div></div>
+        <div class="modal-field"><div class="mf-label">Launched</div><div class="mf-value">${s.launched}</div></div>
+        <div class="modal-field"><div class="mf-label">Status</div><div class="mf-value" style="color:${s.status==='active'?'var(--green)':'var(--t2)'}">${s.status.toUpperCase()}</div></div>
+        <div class="modal-field"><div class="mf-label">Mass</div><div class="mf-value">${s.mass}</div></div>
+        <div class="modal-field"><div class="mf-label">Operators</div><div class="mf-value">${s.ops}</div></div>
+        ${s.crew?`<div class="modal-field"><div class="mf-label">Crew</div><div class="mf-value" style="color:var(--orange)">${s.crew} persons</div></div>`:''}
+      </div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">MISSION OVERVIEW</div>
+      <div style="font-family:'Rajdhani',sans-serif;font-size:13px;color:var(--t2);line-height:1.7;background:var(--panel);padding:14px;border-left:2px solid var(--cyan);">${s.desc}</div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">INSTRUMENTS & SUBSYSTEMS</div>
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        ${s.instruments.map(i=>`<div style="background:var(--panel);padding:6px 10px;font-family:'Rajdhani',sans-serif;font-size:11px;color:var(--t2);display:flex;align-items:center;gap:6px;"><span style="color:var(--cyan);">◈</span>${i}</div>`).join('')}
+      </div>
+    </div>
+  `;
+  openModal();
+}
+
+function openMissionModal(m){
+  document.getElementById('modal-icon').textContent={crewed:'👨‍🚀',lunar:'🌙',mars:'🔴',telescope:'🔭',station:'🛸',probe:'🚀'}[m.filterType]||'🌌';
+  document.getElementById('modal-title').textContent=m.name;
+  document.getElementById('modal-sub').textContent=m.nation+' · '+m.year+' · '+m.filterType.toUpperCase();
+  document.getElementById('modal-body').innerHTML=`
+    <div class="modal-section">
+      <div class="modal-section-title">MISSION DETAILS</div>
+      <div class="modal-grid cols3">
+        <div class="modal-field"><div class="mf-label">Year</div><div class="mf-value" style="color:var(--cyan)">${m.year}</div></div>
+        <div class="modal-field"><div class="mf-label">Nation</div><div class="mf-value">${m.nation}</div></div>
+        <div class="modal-field"><div class="mf-label">Status</div><div class="mf-value" style="color:${m.status==='active'?'var(--green)':m.status==='completed'?'var(--cyan)':'var(--orange)'}">${m.status.toUpperCase()}</div></div>
+        <div class="modal-field"><div class="mf-label">Launch Vehicle</div><div class="mf-value">${m.rocket}</div></div>
+        <div class="modal-field"><div class="mf-label">Mission Type</div><div class="mf-value">${m.filterType.toUpperCase()}</div></div>
+      </div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">MISSION DESCRIPTION</div>
+      <div style="font-family:'Rajdhani',sans-serif;font-size:13px;color:var(--t2);line-height:1.8;background:var(--panel);padding:14px;border-left:2px solid var(--cyan);">${m.desc}</div>
+    </div>
+    ${m.crew?`<div class="modal-section"><div class="modal-section-title">CREW</div><div style="display:flex;gap:6px;flex-wrap:wrap;">${m.crew.map(c=>`<span class="sc-tag orange">👨‍🚀 ${c}</span>`).join('')}</div></div>`:''}
+  `;
+  openModal();
+}
+
+function openAgencyModal(name){
+  const all=[...GOVT_AGENCIES,...PRIVATE_AGENCIES];
+  const a=all.find(x=>x.name===name);
+  if(!a){
+    document.getElementById('modal-icon').textContent='🏢';
+    document.getElementById('modal-title').textContent=name;
+    document.getElementById('modal-sub').textContent='Space Organization';
+    document.getElementById('modal-body').innerHTML=`<div style="padding:20px;font-family:'Rajdhani',sans-serif;color:var(--t2);">Detailed profile coming soon.</div>`;
+    openModal();return;
+  }
+  document.getElementById('modal-icon').textContent=a.logo;
+  document.getElementById('modal-title').textContent=a.name;
+  document.getElementById('modal-sub').textContent=(a.fullName||a.name)+' · '+a.country;
+  document.getElementById('modal-body').innerHTML=`
+    <div class="modal-section">
+      <div class="modal-section-title">ORGANIZATION PROFILE</div>
+      <div class="modal-grid">
+        <div class="modal-field"><div class="mf-label">Type</div><div class="mf-value" style="color:${a.type==='private'?'var(--orange)':'var(--cyan)'}">${a.type.toUpperCase()}</div></div>
+        <div class="modal-field"><div class="mf-label">Country</div><div class="mf-value">${a.country}</div></div>
+        <div class="modal-field"><div class="mf-label">Founded</div><div class="mf-value">${a.founded}</div></div>
+        <div class="modal-field"><div class="mf-label">Founder</div><div class="mf-value">${a.founder||'—'}</div></div>
+      </div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">NOTABLE ACHIEVEMENTS</div>
+      <div style="font-family:'Rajdhani',sans-serif;font-size:13px;color:var(--t2);line-height:1.8;background:var(--panel);padding:14px;border-left:2px solid var(--cyan);">${a.notable}</div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">FOCUS AREAS</div>
+      <div style="font-family:'Rajdhani',sans-serif;font-size:12px;color:var(--t2);background:var(--panel);padding:10px;">${a.focus}</div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">LAUNCH VEHICLES</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        ${(a.rockets||[]).map(r=>`<span class="sc-tag cyan">🔥 ${r}</span>`).join('')}
+      </div>
+    </div>
+  `;
+  openModal();
+}
+</script>
+</body>
+</html>
